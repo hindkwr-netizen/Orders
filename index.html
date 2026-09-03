@@ -66,7 +66,7 @@
 <body>
 
     <div class="header-bar">
-        <span class="status-badge" id="netStatus">🟢 النظام متصل وجاهز</span>
+        <span class="status-badge" id="netStatus">🟢 متزامن مع صديقك</span>
         <button class="btn-reload" onclick="fetchOrders()">🔄 سحب البيانات</button>
     </div>
 
@@ -137,7 +137,6 @@
         let selectedTab = "all";
         let activeImages = [];
 
-        // استرجاع البيانات المحفوظة محلياً عند الفتح
         try {
             const saved = localStorage.getItem(LOCAL_KEY);
             if (saved) orders = JSON.parse(saved);
@@ -168,12 +167,12 @@
                     img.onload = function() {
                         const canvas = document.createElement("canvas");
                         let w = img.width, h = img.height;
-                        const max = 300;
+                        const max = 400;
                         if (w > h && w > max) { h *= max / w; w = max; }
                         else if (h > max) { w *= max / h; h = max; }
                         canvas.width = w; canvas.height = h;
                         canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-                        const b64 = canvas.toDataURL("image/jpeg", 0.4);
+                        const b64 = canvas.toDataURL("image/jpeg", 0.6);
                         activeImages.push(b64);
                         renderThumbs();
                     };
@@ -253,7 +252,7 @@
                         ${o.notes ? `<div class="note-tag">📝 ${o.notes}</div>` : ''}
                         <div class="action-btns">
                             ${o.phone ? `<a href="tel:${o.phone}" class="btn-call">📞 اتصال</a>` : ''}
-                            <button class="btn-wa" onclick="sendWhatsApp('${o.id}')">📤 مشاركة الوصل</button>
+                            <button class="btn-wa" onclick="shareToWhatsApp('${o.id}')">📤 مشاركة الوصل والصور</button>
                             <button class="btn-status-ship" onclick="updateStatus('${o.id}', 'بالطريق')">بالطريق</button>
                             <button class="btn-status-done" onclick="updateStatus('${o.id}', 'واصل')">واصل</button>
                             <button class="btn-status-back" onclick="updateStatus('${o.id}', 'راجع')">راجع</button>
@@ -290,12 +289,10 @@
                 status: "قيد التجهيز"
             };
 
-            // الإضافة المباشرة في أول القائمة
             orders.unshift(order);
             localStorage.setItem(LOCAL_KEY, JSON.stringify(orders));
             renderUI();
 
-            // تفريغ الحقول
             document.getElementById("cName").value = "";
             document.getElementById("cPhone").value = "";
             document.getElementById("cCode").value = "";
@@ -307,7 +304,6 @@
             activeImages = [];
             recalc();
 
-            // الحفظ السحابي في الخلفية
             pushCloud();
         }
 
@@ -360,7 +356,20 @@
             renderUI();
         }
 
-        function sendWhatsApp(id) {
+        // تحويل قاعدة الصورة النصية إلى ملف حقيقي يتعرف عليه واتساب
+        function b64toBlobFile(b64Data, filename) {
+            const parts = b64Data.split(';base64,');
+            const contentType = parts[0].split(':')[1];
+            const raw = window.atob(parts[1]);
+            const rawLength = raw.length;
+            const uInt8Array = new Uint8Array(rawLength);
+            for (let i = 0; i < rawLength; ++i) {
+                uInt8Array[i] = raw.charCodeAt(i);
+            }
+            return new File([uInt8Array], filename, { type: contentType });
+        }
+
+        async function shareToWhatsApp(id) {
             const o = orders.find(x => x.id === id);
             if (!o) return;
 
@@ -375,6 +384,24 @@
                       `💰 *السعر بعد التوصيل (المجموع):* ${Number(o.total).toLocaleString()} دينار\n`;
             if (o.notes) msg += `📝 *ملاحظات:* ${o.notes}\n`;
 
+            // مشاركة الملفات الحقيقية عبر واجهة النظام الأصلية
+            if (o.images && o.images.length > 0 && navigator.share) {
+                try {
+                    const files = o.images.map((img, i) => b64toBlobFile(img, `order_item_${i + 1}.jpg`));
+                    if (navigator.canShare && navigator.canShare({ files: files })) {
+                        await navigator.share({
+                            files: files,
+                            title: 'وصل الطلب',
+                            text: msg
+                        });
+                        return;
+                    }
+                } catch(err) {
+                    console.log("Share cancelled or failed");
+                }
+            }
+
+            // تحويل احتياطي مباشر في حال عدم توفر صور
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
         }
 
