@@ -22,6 +22,8 @@
         input, select, textarea { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #475569; border-radius: 8px; font-size: 14px; background: #0f172a; color: #fff; }
         textarea { resize: vertical; height: 50px; }
         
+        .calc-preview { background: #0f172a; border: 1px solid #38bdf8; padding: 10px; border-radius: 8px; font-size: 13px; color: #38bdf8; margin-bottom: 8px; text-align: center; font-weight: bold; }
+
         .file-label { display: block; background: #334155; padding: 10px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px dashed #38bdf8; margin-bottom: 8px; color: #38bdf8; }
         .preview-list { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; padding-bottom: 4px; }
         .preview-thumb { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid #38bdf8; flex-shrink: 0; }
@@ -71,7 +73,7 @@
 
     <div class="stats-grid">
         <div class="stat-card">
-            <div class="stat-label">المبالغ الواصلة</div>
+            <div class="stat-label">المبالغ الواصلة (شامل التوصيل)</div>
             <div class="stat-num" style="color:#34d399;" id="statDelivered">0 د.ع</div>
         </div>
         <div class="stat-card">
@@ -79,7 +81,7 @@
             <div class="stat-num" style="color:#38bdf8;" id="statShipping">0 د.ع</div>
         </div>
         <div class="stat-card full">
-            <div class="stat-label">المجموع الكلي</div>
+            <div class="stat-label">المجموع الكلي للطلبات</div>
             <div class="stat-num" id="statTotal">0 د.ع</div>
         </div>
     </div>
@@ -90,14 +92,17 @@
         <input type="tel" id="custPhone" placeholder="رقم الهاتف">
         <input type="text" id="itemCode" placeholder="رقم / كود القطعة">
         <input type="text" id="custAddr" placeholder="العنوان بالتفصيل">
-        <input type="number" id="itemPrice" placeholder="المبلغ المطلوب (دينار)">
-        <select id="shipMethod">
-            <option value="داخل خانقين">توصيل: داخل خانقين</option>
-            <option value="شركة التوصيل">توصيل: شركة التوصيل (المحافظات)</option>
+        <input type="number" id="itemPrice" placeholder="سعر القطعة (دينار)" oninput="updateLiveCalc()">
+        
+        <select id="shipMethod" onchange="updateLiveCalc()">
+            <option value="داخل خانقين">داخل خانقين (+2,000 د.ع توصيل)</option>
+            <option value="المحافظات">خارج خانقين / المحافظات (+5,000 د.ع توصيل)</option>
         </select>
+
+        <div id="liveCalcBox" class="calc-preview">المجموع الإجمالي مع التوصيل: 0 د.ع</div>
+
         <textarea id="custNotes" placeholder="ملاحظات إضافية (اختياري)"></textarea>
 
-        <!-- اختيار عدة صور دفعة واحدة -->
         <label class="file-label" for="itemImages">📷 اضغط هنا لاختيار صورة أو عدة صور سكرين</label>
         <input type="file" id="itemImages" accept="image/*" multiple style="display:none;" onchange="handleMultipleImages(event)">
         <div id="previewContainer" class="preview-list"></div>
@@ -107,8 +112,8 @@
 
     <div class="tabs">
         <button class="tab active" onclick="switchTab('all', this)">الكل (<span id="countTotal">0</span>)</button>
-        <button class="tab" onclick="switchTab('داخل خانقين', this)">خانقين</button>
-        <button class="tab" onclick="switchTab('شركة التوصيل', this)">المحافظات</button>
+        <button class="tab" onclick="switchTab('داخل خانقين', this)">داخل خانقين</button>
+        <button class="tab" onclick="switchTab('المحافظات', this)">خارج خانقين</button>
         <button class="tab" onclick="switchTab('بالطريق', this)">🚚 بالطريق</button>
         <button class="tab" onclick="switchTab('تم التسليم', this)">✅ واصل</button>
         <button class="tab" onclick="switchTab('راجع', this)">❌ راجع</button>
@@ -127,7 +132,19 @@
         let activeTab = 'all';
         let currentUploadedImages = [];
 
-        // معالجة وضغط عدة صور معاً
+        function getDeliveryFee(method) {
+            return method.includes('داخل خانقين') ? 2000 : 5000;
+        }
+
+        function updateLiveCalc() {
+            const price = parseFloat(document.getElementById('itemPrice').value) || 0;
+            const method = document.getElementById('shipMethod').value;
+            const fee = getDeliveryFee(method);
+            const total = price + fee;
+            document.getElementById('liveCalcBox').innerText = 
+                `سعر القطعة: ${price.toLocaleString()} + توصيل: ${fee.toLocaleString()} = الكلي: ${total.toLocaleString()} د.ع`;
+        }
+
         function handleMultipleImages(event) {
             const files = Array.from(event.target.files);
             if (!files.length) return;
@@ -174,10 +191,13 @@
         function updateTotals(ordersList) {
             let done = 0, road = 0, total = 0;
             ordersList.forEach(o => {
-                const val = Number(o.price) || 0;
-                if (o.status === 'تم التسليم') done += val;
-                if (o.status === 'بالطريق' || o.status === 'قيد التجهيز') road += val;
-                if (o.status !== 'راجع') total += val;
+                const itemP = Number(o.price) || 0;
+                const delP = Number(o.deliveryFee) || 0;
+                const fullP = o.totalPrice ? Number(o.totalPrice) : (itemP + delP);
+
+                if (o.status === 'تم التسليم') done += fullP;
+                if (o.status === 'بالطريق' || o.status === 'قيد التجهيز') road += fullP;
+                if (o.status !== 'راجع') total += fullP;
             });
             document.getElementById('statDelivered').innerText = done.toLocaleString() + ' د.ع';
             document.getElementById('statShipping').innerText = road.toLocaleString() + ' د.ع';
@@ -193,8 +213,8 @@
 
             let filtered = ordersList.filter(o => {
                 if (activeTab === 'all') return true;
-                if (activeTab === 'داخل خانقين') return o.by && o.by.includes('خانقين');
-                if (activeTab === 'شركة التوصيل') return o.by && o.by.includes('شركة');
+                if (activeTab === 'داخل خانقين') return o.by && o.by.includes('داخل خانقين');
+                if (activeTab === 'المحافظات') return o.by && (o.by.includes('المحافظات') || o.by.includes('شركة'));
                 return o.status === activeTab;
             });
 
@@ -210,9 +230,13 @@
                 if (o.status === 'تم التسليم') cls = 'done';
                 if (o.status === 'راجع') cls = 'returned';
 
-                let bCls = (o.by && o.by.includes('خانقين')) ? 'b-khanaqin' : 'b-comp';
+                let isKhanaqin = o.by && o.by.includes('خانقين');
+                let bCls = isKhanaqin ? 'b-khanaqin' : 'b-comp';
 
-                // دعم الصور المتعددة أو المفردة السابقة
+                const itemPrice = Number(o.price) || 0;
+                const deliveryFee = Number(o.deliveryFee) || (isKhanaqin ? 2000 : 5000);
+                const totalPrice = o.totalPrice ? Number(o.totalPrice) : (itemPrice + deliveryFee);
+
                 let imgs = [];
                 if (Array.isArray(o.images)) imgs = o.images;
                 else if (o.img) imgs = [o.img];
@@ -232,7 +256,8 @@
                         </div>
                         <div class="info">
                             📍 ${o.addr || 'بدون عنوان'}<br>
-                            💰 ${Number(o.price).toLocaleString()} دينار | 
+                            🏷️ سعر القطعة: ${itemPrice.toLocaleString()} د.ع | 🚚 التوصيل: ${deliveryFee.toLocaleString()} د.ع<br>
+                            💰 <strong style="color:#38bdf8;">المجموع الكلي: ${totalPrice.toLocaleString()} دينار</strong><br>
                             <span class="badge ${bCls}">${o.by}</span> | 
                             <strong>${o.status}</strong>
                         </div>
@@ -281,8 +306,12 @@
                 return;
             }
 
+            const deliveryFee = getDeliveryFee(by);
+            const totalPrice = price + deliveryFee;
+
             const item = { 
-                name, phone, code, addr, price, by, notes, 
+                name, phone, code, addr, price, 
+                deliveryFee, totalPrice, by, notes, 
                 images: currentUploadedImages,
                 status: 'قيد التجهيز', 
                 date: Date.now() 
@@ -306,6 +335,7 @@
                 document.getElementById('itemImages').value = '';
                 document.getElementById('previewContainer').innerHTML = '';
                 currentUploadedImages = [];
+                updateLiveCalc();
                 
                 loadFromCloud();
             } catch(e) {
@@ -338,7 +368,6 @@
             drawList();
         }
 
-        // تحويل base64 إلى ملف حقيقي للمشاركة المباشرة
         function dataURLtoFile(dataurl, filename) {
             let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
                 bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
@@ -351,53 +380,10 @@
         async function shareWithWhatsApp(id) {
             const o = allOrders[id];
             if (!o) return;
+
+            const isKhanaqin = o.by && o.by.includes('خانقين');
+            const itemPrice = Number(o.price) || 0;
+            const deliveryFee = Number(o.deliveryFee) || (isKhanaqin ? 2000 : 5000);
+            const totalPrice = o.totalPrice ? Number(o.totalPrice) : (itemPrice + deliveryFee);
             
-            let textMsg = `📄 *وصل تفاصيل الطلب* 📦\n` +
-                          `━━━━━━━━━━━━━━\n` +
-                          `👤 *الاسم:* ${o.name}\n` +
-                          `📞 *الهاتف:* ${o.phone || 'غير مسجل'}\n` +
-                          `🏷️ *كود القطعة:* ${o.code}\n` +
-                          `📍 *العنوان:* ${o.addr || 'غير محدد'}\n` +
-                          `💰 *المبلغ الصافي:* ${Number(o.price).toLocaleString()} دينار\n` +
-                          `🚚 *طريقة التوصيل:* ${o.by}\n`;
-            if (o.notes) textMsg += `📝 *ملاحظات:* ${o.notes}\n`;
-
-            let imgs = [];
-            if (Array.isArray(o.images)) imgs = o.images;
-            else if (o.img) imgs = [o.img];
-
-            // إذا كان المتصفح يدعم مشاركة الملفات (Web Share API) سيفتح قائمة التطبيقات لاختيار واتساب مع الصور والنص معاً
-            if (navigator.canShare && imgs.length > 0) {
-                try {
-                    const filesArray = imgs.map((base64, index) => dataURLtoFile(base64, `item_${index+1}.jpg`));
-                    if (navigator.canShare({ files: filesArray })) {
-                        await navigator.share({
-                            files: filesArray,
-                            title: 'وصل طلب',
-                            text: textMsg
-                        });
-                        return;
-                    }
-                } catch (error) {
-                    console.log('Share fallback to URL');
-                }
-            }
-
-            // خيار بديل قياسي لواتساب في حال عدم دعم المتصفح لنقل الملفات
-            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(textMsg)}`, '_blank');
-        }
-
-        function openModal(src) {
-            document.getElementById('modalImg').src = src;
-            document.getElementById('imgModal').style.display = 'flex';
-        }
-
-        function closeModal() {
-            document.getElementById('imgModal').style.display = 'none';
-        }
-
-        loadFromCloud();
-        setInterval(loadFromCloud, 4000);
-    </script>
-</body>
-</html>
+            let textMsg 
