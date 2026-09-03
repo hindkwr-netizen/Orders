@@ -23,7 +23,8 @@
         textarea { resize: vertical; height: 50px; }
         
         .file-label { display: block; background: #334155; padding: 10px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px dashed #38bdf8; margin-bottom: 8px; color: #38bdf8; }
-        .img-preview { display: none; width: 100%; max-height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; border: 1px solid #475569; }
+        .preview-list { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; padding-bottom: 4px; }
+        .preview-thumb { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid #38bdf8; flex-shrink: 0; }
 
         .btn-main { background: #2563eb; color: #fff; border: 0; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; }
         
@@ -42,13 +43,13 @@
         .code { background: #334155; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; }
         .info { font-size: 13px; color: #94a3b8; line-height: 1.6; margin-bottom: 8px; }
         
-        .card-img-box { margin-bottom: 8px; text-align: center; }
-        .card-img { width: 100%; max-height: 160px; object-fit: contain; background: #0f172a; border-radius: 8px; border: 1px solid #475569; cursor: pointer; }
+        .card-images { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; padding-bottom: 4px; }
+        .card-img { width: 85px; height: 85px; object-fit: cover; background: #0f172a; border-radius: 8px; border: 1px solid #475569; cursor: pointer; flex-shrink: 0; }
 
         .notes-box { background: #334155; border: 1px dashed #f59e0b; padding: 6px; border-radius: 6px; font-size: 12px; color: #fde047; margin-bottom: 8px; }
         
         .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-        .b-friend { background: #0369a1; color: #e0f2fe; }
+        .b-khanaqin { background: #0369a1; color: #e0f2fe; }
         .b-comp { background: #854d0e; color: #fef3c7; }
 
         .btns { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
@@ -57,7 +58,6 @@
         .share { background: #25d366; color: #fff; border: 0; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
         .del { background: #7f1d1d; color: #fca5a5; margin-right: auto; }
 
-        /* نافذة تكبير الصورة */
         .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); justify-content: center; align-items: center; }
         .modal img { max-width: 95%; max-height: 90%; border-radius: 8px; }
     </style>
@@ -92,23 +92,23 @@
         <input type="text" id="custAddr" placeholder="العنوان بالتفصيل">
         <input type="number" id="itemPrice" placeholder="المبلغ المطلوب (دينار)">
         <select id="shipMethod">
-            <option value="صديقي (خانقين)">توصيل: صديقي (داخل خانقين)</option>
+            <option value="داخل خانقين">توصيل: داخل خانقين</option>
             <option value="شركة التوصيل">توصيل: شركة التوصيل (المحافظات)</option>
         </select>
         <textarea id="custNotes" placeholder="ملاحظات إضافية (اختياري)"></textarea>
 
-        <!-- خانة رفع سكرين شوت القطعة -->
-        <label class="file-label" for="itemImage">📷 اضغط هنا لاختيار سكرين شوت القطعة</label>
-        <input type="file" id="itemImage" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
-        <img id="imagePreview" class="img-preview">
+        <!-- اختيار عدة صور دفعة واحدة -->
+        <label class="file-label" for="itemImages">📷 اضغط هنا لاختيار صورة أو عدة صور سكرين</label>
+        <input type="file" id="itemImages" accept="image/*" multiple style="display:none;" onchange="handleMultipleImages(event)">
+        <div id="previewContainer" class="preview-list"></div>
 
         <button type="button" class="btn-main" onclick="saveNewOrder()">تثبيت الطلب</button>
     </div>
 
     <div class="tabs">
         <button class="tab active" onclick="switchTab('all', this)">الكل (<span id="countTotal">0</span>)</button>
-        <button class="tab" onclick="switchTab('صديقي', this)">خانقين</button>
-        <button class="tab" onclick="switchTab('شركة', this)">المحافظات</button>
+        <button class="tab" onclick="switchTab('داخل خانقين', this)">خانقين</button>
+        <button class="tab" onclick="switchTab('شركة التوصيل', this)">المحافظات</button>
         <button class="tab" onclick="switchTab('بالطريق', this)">🚚 بالطريق</button>
         <button class="tab" onclick="switchTab('تم التسليم', this)">✅ واصل</button>
         <button class="tab" onclick="switchTab('راجع', this)">❌ راجع</button>
@@ -116,7 +116,6 @@
 
     <div id="ordersContainer"></div>
 
-    <!-- نافذة عرض الصورة المكبرة -->
     <div id="imgModal" class="modal" onclick="closeModal()">
         <img id="modalImg" src="">
     </div>
@@ -126,41 +125,50 @@
 
         let allOrders = {};
         let activeTab = 'all';
-        let currentBase64Img = "";
+        let currentUploadedImages = [];
 
-        // ضغط الصورة وتحويلها لنص خفيف للحفظ المباشر
-        function handleImageSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        // معالجة وضغط عدة صور معاً
+        function handleMultipleImages(event) {
+            const files = Array.from(event.target.files);
+            if (!files.length) return;
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    const maxDim = 600; // تصغير الحجم لتسريع التحميل والمزامنة الفورية
-                    if (width > height && width > maxDim) {
-                        height *= maxDim / width;
-                        width = maxDim;
-                    } else if (height > maxDim) {
-                        width *= maxDim / height;
-                        height = maxDim;
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    currentBase64Img = canvas.toDataURL('image/jpeg', 0.65);
-
-                    const preview = document.getElementById('imagePreview');
-                    preview.src = currentBase64Img;
-                    preview.style.display = 'block';
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const maxDim = 600;
+                        if (width > height && width > maxDim) {
+                            height *= maxDim / width;
+                            width = maxDim;
+                        } else if (height > maxDim) {
+                            width *= maxDim / height;
+                            height = maxDim;
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const base64 = canvas.toDataURL('image/jpeg', 0.6);
+                        
+                        currentUploadedImages.push(base64);
+                        renderPreviews();
+                    };
+                    img.src = e.target.result;
                 };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function renderPreviews() {
+            const container = document.getElementById('previewContainer');
+            container.innerHTML = '';
+            currentUploadedImages.forEach(src => {
+                container.innerHTML += `<img src="${src}" class="preview-thumb">`;
+            });
         }
 
         function updateTotals(ordersList) {
@@ -185,8 +193,8 @@
 
             let filtered = ordersList.filter(o => {
                 if (activeTab === 'all') return true;
-                if (activeTab === 'صديقي') return o.by && o.by.includes('صديقي');
-                if (activeTab === 'شركة') return o.by && o.by.includes('شركة');
+                if (activeTab === 'داخل خانقين') return o.by && o.by.includes('خانقين');
+                if (activeTab === 'شركة التوصيل') return o.by && o.by.includes('شركة');
                 return o.status === activeTab;
             });
 
@@ -202,7 +210,19 @@
                 if (o.status === 'تم التسليم') cls = 'done';
                 if (o.status === 'راجع') cls = 'returned';
 
-                let bCls = (o.by && o.by.includes('صديقي')) ? 'b-friend' : 'b-comp';
+                let bCls = (o.by && o.by.includes('خانقين')) ? 'b-khanaqin' : 'b-comp';
+
+                // دعم الصور المتعددة أو المفردة السابقة
+                let imgs = [];
+                if (Array.isArray(o.images)) imgs = o.images;
+                else if (o.img) imgs = [o.img];
+
+                let imagesHtml = '';
+                if (imgs.length > 0) {
+                    imagesHtml = `<div class="card-images">` + 
+                        imgs.map(imgSrc => `<img src="${imgSrc}" class="card-img" onclick="openModal('${imgSrc}')">`).join('') +
+                        `</div>`;
+                }
 
                 container.innerHTML += `
                     <div class="card ${cls}">
@@ -216,16 +236,11 @@
                             <span class="badge ${bCls}">${o.by}</span> | 
                             <strong>${o.status}</strong>
                         </div>
-                        ${o.img ? `
-                            <div class="card-img-box">
-                                <img src="${o.img}" class="card-img" onclick="openModal('${o.img}')" alt="صورة الطلب">
-                                <small style="display:block; color:#38bdf8; margin-top:3px;">(اضغط على الصورة لتكبيرها)</small>
-                            </div>
-                        ` : ''}
+                        ${imagesHtml}
                         ${o.notes ? `<div class="notes-box">📝 ${o.notes}</div>` : ''}
                         <div class="btns">
                             ${o.phone ? `<a href="tel:${o.phone}" class="call">📞 اتصال</a>` : ''}
-                            <button class="share" onclick="sendWhatsApp('${o.firebaseId}')">📲 وصل واتساب</button>
+                            <button class="share" onclick="shareWithWhatsApp('${o.firebaseId}')">📤 مشاركة الوصل والصور</button>
                             <button class="btn-act" style="background:#0284c7; color:#fff;" onclick="changeStatus('${o.firebaseId}', 'بالطريق')">بالطريق</button>
                             <button class="btn-act" style="background:#059669; color:#fff;" onclick="changeStatus('${o.firebaseId}', 'تم التسليم')">واصل</button>
                             <button class="btn-act" style="background:#dc2626; color:#fff;" onclick="changeStatus('${o.firebaseId}', 'راجع')">راجع</button>
@@ -268,7 +283,7 @@
 
             const item = { 
                 name, phone, code, addr, price, by, notes, 
-                img: currentBase64Img || null,
+                images: currentUploadedImages,
                 status: 'قيد التجهيز', 
                 date: Date.now() 
             };
@@ -288,9 +303,9 @@
                 document.getElementById('custAddr').value = '';
                 document.getElementById('itemPrice').value = '';
                 document.getElementById('custNotes').value = '';
-                document.getElementById('itemImage').value = '';
-                document.getElementById('imagePreview').style.display = 'none';
-                currentBase64Img = "";
+                document.getElementById('itemImages').value = '';
+                document.getElementById('previewContainer').innerHTML = '';
+                currentUploadedImages = [];
                 
                 loadFromCloud();
             } catch(e) {
@@ -323,21 +338,53 @@
             drawList();
         }
 
-        function sendWhatsApp(id) {
+        // تحويل base64 إلى ملف حقيقي للمشاركة المباشرة
+        function dataURLtoFile(dataurl, filename) {
+            let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+                bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+            while(n--){
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new File([u8arr], filename, {type:mime});
+        }
+
+        async function shareWithWhatsApp(id) {
             const o = allOrders[id];
             if (!o) return;
-            let msg = `📄 *وصل تفاصيل الطلب* 📦\n` +
-                      `━━━━━━━━━━━━━━\n` +
-                      `👤 *الاسم:* ${o.name}\n` +
-                      `📞 *الهاتف:* ${o.phone || 'غير مسجل'}\n` +
-                      `🏷️ *كود القطعة:* ${o.code}\n` +
-                      `📍 *العنوان:* ${o.addr || 'غير محدد'}\n` +
-                      `💰 *المبلغ الصافي:* ${Number(o.price).toLocaleString()} دينار\n` +
-                      `🚚 *طريقة التوصيل:* ${o.by}\n`;
-            if (o.notes) msg += `📝 *ملاحظات:* ${o.notes}\n`;
-            if (o.img) msg += `🖼️ *مرفق مع الطلب سكرين شوت القطعة.*`;
+            
+            let textMsg = `📄 *وصل تفاصيل الطلب* 📦\n` +
+                          `━━━━━━━━━━━━━━\n` +
+                          `👤 *الاسم:* ${o.name}\n` +
+                          `📞 *الهاتف:* ${o.phone || 'غير مسجل'}\n` +
+                          `🏷️ *كود القطعة:* ${o.code}\n` +
+                          `📍 *العنوان:* ${o.addr || 'غير محدد'}\n` +
+                          `💰 *المبلغ الصافي:* ${Number(o.price).toLocaleString()} دينار\n` +
+                          `🚚 *طريقة التوصيل:* ${o.by}\n`;
+            if (o.notes) textMsg += `📝 *ملاحظات:* ${o.notes}\n`;
 
-            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+            let imgs = [];
+            if (Array.isArray(o.images)) imgs = o.images;
+            else if (o.img) imgs = [o.img];
+
+            // إذا كان المتصفح يدعم مشاركة الملفات (Web Share API) سيفتح قائمة التطبيقات لاختيار واتساب مع الصور والنص معاً
+            if (navigator.canShare && imgs.length > 0) {
+                try {
+                    const filesArray = imgs.map((base64, index) => dataURLtoFile(base64, `item_${index+1}.jpg`));
+                    if (navigator.canShare({ files: filesArray })) {
+                        await navigator.share({
+                            files: filesArray,
+                            title: 'وصل طلب',
+                            text: textMsg
+                        });
+                        return;
+                    }
+                } catch (error) {
+                    console.log('Share fallback to URL');
+                }
+            }
+
+            // خيار بديل قياسي لواتساب في حال عدم دعم المتصفح لنقل الملفات
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(textMsg)}`, '_blank');
         }
 
         function openModal(src) {
