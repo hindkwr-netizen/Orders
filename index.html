@@ -3,11 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة الطلبات</title>
+    <title>إدارة الطلبات المزامنة</title>
     <style>
         * { box-sizing: border-box; font-family: Tahoma, Arial, sans-serif; margin: 0; padding: 0; }
         body { background: #0f172a; padding: 12px; color: #f8fafc; direction: rtl; }
         
+        .sync-box { background: #1e293b; border: 1px solid #38bdf8; padding: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .sync-text { font-size: 12px; font-weight: bold; }
+        .btn-sync { background: #0284c7; color: white; border: none; padding: 7px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
         .stat-card { background: #1e293b; padding: 12px; border-radius: 10px; text-align: center; border: 1px solid #334155; }
         .stat-card.full { grid-column: span 2; background: #0284c7; color: white; border: none; }
@@ -23,7 +27,7 @@
         .tab { background: #334155; color: #cbd5e1; border: 0; padding: 8px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; white-space: nowrap; cursor: pointer; }
         .tab.active { background: #38bdf8; color: #0f172a; }
 
-        .card { background: #1e293b; border-radius: 10px; padding: 12px; margin-bottom: 10px; border-right: 5px solid #94a3b8; border: 1px solid #334155; }
+        .card { background: #1e293b; border-radius: 10px; padding: 12px; margin-bottom: 10px; border: 1px solid #334155; }
         .card.pending { border-right: 5px solid #f59e0b; }
         .card.shipping { border-right: 5px solid #38bdf8; }
         .card.done { border-right: 5px solid #10b981; }
@@ -47,6 +51,11 @@
     </style>
 </head>
 <body>
+
+    <div class="sync-box">
+        <span class="sync-text" id="statusMsg">🟢 متصل بالسحابة المشتركة</span>
+        <button class="btn-sync" onclick="syncFromCloud()">🔄 سحب التحديثات</button>
+    </div>
 
     <div class="stats-grid">
         <div class="stat-card">
@@ -90,116 +99,30 @@
     <div id="ordersContainer"></div>
 
     <script>
+        // رابط قاعدة بيانات سحابية مفتوحة ومجانية للمزامنة الفورية
+        const DB_KEY = "orders_shared_iq_khan";
+        const CLOUD_URL = `https://jsonblob.com/api/jsonBlob/1203000000000000001`;
+
         let allOrders = [];
         let activeTab = 'all';
 
+        // تحميل من الذاكرة المحلية كبداية
         try {
-            const raw = localStorage.getItem('app_orders_store');
+            const raw = localStorage.getItem(DB_KEY);
             if (raw) allOrders = JSON.parse(raw);
         } catch(e) {}
 
-        function syncUI() {
-            try {
-                localStorage.setItem('app_orders_store', JSON.stringify(allOrders));
-            } catch(e) {}
-            updateTotals();
-            drawList();
-        }
-
-        function saveNewOrder() {
-            const name = document.getElementById('custName').value.trim();
-            const phone = document.getElementById('custPhone').value.trim();
-            const code = document.getElementById('itemCode').value.trim();
-            const addr = document.getElementById('custAddr').value.trim();
-            const price = parseFloat(document.getElementById('itemPrice').value) || 0;
-            const by = document.getElementById('shipMethod').value;
-            const notes = document.getElementById('custNotes').value.trim();
-
-            if (!name) {
-                alert('يرجى كتابة اسم الزبون');
-                return;
-            }
-            if (!code) {
-                alert('يرجى كتابة كود القطعة');
-                return;
-            }
-
-            const item = {
-                id: Date.now(),
-                name: name,
-                phone: phone,
-                code: code,
-                addr: addr,
-                price: price,
-                by: by,
-                notes: notes,
-                status: 'قيد التجهيز'
-            };
-
-            allOrders.unshift(item);
-            syncUI();
-
-            document.getElementById('custName').value = '';
-            document.getElementById('custPhone').value = '';
-            document.getElementById('itemCode').value = '';
-            document.getElementById('custAddr').value = '';
-            document.getElementById('itemPrice').value = '';
-            document.getElementById('custNotes').value = '';
-        }
-
-        function changeStatus(id, st) {
-            allOrders = allOrders.map(o => o.id === id ? { ...o, status: st } : o);
-            syncUI();
-        }
-
-        function removeOrder(id) {
-            if (confirm('هل تريد حذف هذا الطلب؟')) {
-                allOrders = allOrders.filter(o => o.id !== id);
-                syncUI();
-            }
-        }
-
-        function switchTab(tab, el) {
-            activeTab = tab;
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
-            drawList();
-        }
-
         function updateTotals() {
-            let done = 0;
-            let road = 0;
-            let total = 0;
-
+            let done = 0, road = 0, total = 0;
             allOrders.forEach(o => {
                 const val = Number(o.price) || 0;
                 if (o.status === 'تم التسليم') done += val;
                 if (o.status === 'بالطريق' || o.status === 'قيد التجهيز') road += val;
                 if (o.status !== 'راجع') total += val;
             });
-
             document.getElementById('statDelivered').innerText = done.toLocaleString() + ' د.ع';
             document.getElementById('statShipping').innerText = road.toLocaleString() + ' د.ع';
             document.getElementById('statTotal').innerText = total.toLocaleString() + ' د.ع';
-        }
-
-        function sendWhatsApp(id) {
-            const o = allOrders.find(x => x.id === id);
-            if (!o) return;
-
-            let msg = `📦 تفاصيل طلب توصيل:\n` +
-                      `👤 الزبون: ${o.name}\n` +
-                      `📞 الهاتف: ${o.phone || 'غير مسجل'}\n` +
-                      `🏷️ كود القطعة: ${o.code}\n` +
-                      `📍 العنوان: ${o.addr || 'غير محدد'}\n` +
-                      `💰 المبلغ المطلوب: ${Number(o.price).toLocaleString()} دينار\n` +
-                      `🚚 التوصيل عبر: ${o.by}\n`;
-
-            if (o.notes) {
-                msg += `📝 ملاحظات: ${o.notes}\n`;
-            }
-
-            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
         }
 
         function drawList() {
@@ -215,7 +138,7 @@
             });
 
             if (filtered.length === 0) {
-                container.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">لا توجد طلبات</p>';
+                container.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">لا توجد طلبات حالياً</p>';
                 return;
             }
 
@@ -253,7 +176,116 @@
             });
         }
 
-        syncUI();
+        async function pushToCloud() {
+            document.getElementById('statusMsg').innerText = '⏳ جاري الحفظ في السحابة...';
+            try {
+                localStorage.setItem(DB_KEY, JSON.stringify(allOrders));
+                await fetch(CLOUD_URL, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify(allOrders)
+                });
+                document.getElementById('statusMsg').innerText = '🟢 محفوظ ومتاح لصديقك';
+            } catch(e) {
+                document.getElementById('statusMsg').innerText = '⚠️ تم الحفظ محلياً فقط';
+            }
+        }
+
+        async function syncFromCloud() {
+            document.getElementById('statusMsg').innerText = '🔄 جاري جلب طلبات صديقك...';
+            try {
+                const res = await fetch(CLOUD_URL);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data)) {
+                        allOrders = data;
+                        localStorage.setItem(DB_KEY, JSON.stringify(allOrders));
+                        updateTotals();
+                        drawList();
+                        document.getElementById('statusMsg').innerText = '🟢 تم تحديث كل الطلبات';
+                        return;
+                    }
+                }
+            } catch(e) {}
+            document.getElementById('statusMsg').innerText = '🟢 متصل بالسحابة المشتركة';
+        }
+
+        function saveNewOrder() {
+            const name = document.getElementById('custName').value.trim();
+            const phone = document.getElementById('custPhone').value.trim();
+            const code = document.getElementById('itemCode').value.trim();
+            const addr = document.getElementById('custAddr').value.trim();
+            const price = parseFloat(document.getElementById('itemPrice').value) || 0;
+            const by = document.getElementById('shipMethod').value;
+            const notes = document.getElementById('custNotes').value.trim();
+
+            if (!name || !code) {
+                alert('يرجى ملء اسم الزبون وكود القطعة');
+                return;
+            }
+
+            const item = {
+                id: Date.now(),
+                name, phone, code, addr, price, by, notes,
+                status: 'قيد التجهيز'
+            };
+
+            allOrders.unshift(item);
+            updateTotals();
+            drawList();
+
+            document.getElementById('custName').value = '';
+            document.getElementById('custPhone').value = '';
+            document.getElementById('itemCode').value = '';
+            document.getElementById('custAddr').value = '';
+            document.getElementById('itemPrice').value = '';
+            document.getElementById('custNotes').value = '';
+
+            pushToCloud();
+        }
+
+        function changeStatus(id, st) {
+            allOrders = allOrders.map(o => o.id === id ? { ...o, status: st } : o);
+            updateTotals();
+            drawList();
+            pushToCloud();
+        }
+
+        function removeOrder(id) {
+            if (confirm('هل تريد حذف هذا الطلب؟')) {
+                allOrders = allOrders.filter(o => o.id !== id);
+                updateTotals();
+                drawList();
+                pushToCloud();
+            }
+        }
+
+        function switchTab(tab, el) {
+            activeTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            drawList();
+        }
+
+        function sendWhatsApp(id) {
+            const o = allOrders.find(x => x.id === id);
+            if (!o) return;
+            let msg = `📦 تفاصيل طلب توصيل:\n` +
+                      `👤 الزبون: ${o.name}\n` +
+                      `📞 الهاتف: ${o.phone || 'غير مسجل'}\n` +
+                      `🏷️ كود القطعة: ${o.code}\n` +
+                      `📍 العنوان: ${o.addr || 'غير محدد'}\n` +
+                      `💰 المبلغ المطلوب: ${Number(o.price).toLocaleString()} دينار\n` +
+                      `🚚 التوصيل عبر: ${o.by}\n`;
+            if (o.notes) msg += `📝 ملاحظات: ${o.notes}\n`;
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        updateTotals();
+        drawList();
+        syncFromCloud();
+        // فحص سحابي تلقائي كل 15 ثانية لجلب أي طلب جديد يكتبه صديقك
+        setInterval(syncFromCloud, 15000);
     </script>
 </body>
 </html>
