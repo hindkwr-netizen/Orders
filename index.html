@@ -31,7 +31,7 @@
 
         .upload-btn { display: block; background: #334155; padding: 9px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px dashed #38bdf8; margin-bottom: 8px; color: #38bdf8; }
         .previews { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; }
-        .thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #38bdf8; flex-shrink: 0; }
+        .thumb { width: 55px; height: 55px; object-fit: cover; border-radius: 6px; border: 1px solid #38bdf8; flex-shrink: 0; }
 
         .btn-add { background: #2563eb; color: #fff; border: 0; width: 100%; padding: 13px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
 
@@ -53,7 +53,7 @@
         .card-details { font-size: 13px; color: #cbd5e1; line-height: 1.7; margin-bottom: 8px; }
 
         .img-gallery { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; }
-        .img-gallery img { width: 75px; height: 75px; object-fit: cover; border-radius: 6px; border: 1px solid #475569; cursor: pointer; flex-shrink: 0; }
+        .img-gallery img { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid #475569; cursor: pointer; flex-shrink: 0; }
 
         .note-tag { background: #334155; border: 1px dashed #f59e0b; padding: 6px; border-radius: 6px; font-size: 12px; color: #fde047; margin-bottom: 8px; }
 
@@ -78,10 +78,10 @@
 <body>
 
     <div class="header-bar">
-        <span class="status-badge" id="netStatus">🟢 متزامن مع صديقك</span>
+        <span class="status-badge" id="netStatus">🟢 متصل ومحدث فورياً</span>
         <div class="header-actions">
             <button class="btn-export" onclick="exportToExcel()">📊 تصدير Excel</button>
-            <button class="btn-reload" onclick="fetchOrders()">🔄 سحب البيانات</button>
+            <button class="btn-reload" onclick="fetchOrders()">🔄 تحديث</button>
         </div>
     </div>
 
@@ -100,7 +100,6 @@
         </div>
     </div>
 
-    <!-- خانة البحث السريع -->
     <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث بالاسم، الهاتف، الكود، أو التاريخ..." oninput="handleSearch()">
 
     <div class="box">
@@ -171,24 +170,38 @@
         </div>
     </div>
 
-    <!-- نافذة تكبير الصورة -->
     <div id="modal" class="modal img-modal" onclick="this.style.display='none'">
         <img id="modalViewer" src="">
     </div>
 
     <script>
         const FIREBASE_URL = "https://orders-99674-default-rtdb.firebaseio.com/orders.json";
-        const LOCAL_KEY = "simple_orders_storage_v1";
+        const LOCAL_KEY = "orders_secure_db_v4";
 
         let orders = [];
         let selectedTab = "all";
         let searchQuery = "";
         let activeImages = [];
 
+        // قراءة آمنة لمنع أي خطأ
         try {
             const saved = localStorage.getItem(LOCAL_KEY);
             if (saved) orders = JSON.parse(saved);
-        } catch(e) {}
+        } catch(e) {
+            orders = [];
+        }
+
+        function safeSaveLocal() {
+            try {
+                localStorage.setItem(LOCAL_KEY, JSON.stringify(orders));
+            } catch(e) {
+                // إذا امتلأت ذاكرة المتصفح بسبب صور قديمة، ننظفها ونحفظ النصوص فقط لضمان استمرار العمل
+                try {
+                    const lightweight = orders.map(o => ({ ...o, images: [] }));
+                    localStorage.setItem(LOCAL_KEY, JSON.stringify(lightweight));
+                } catch(err) {}
+            }
+        }
 
         function calcFee(method) {
             if (method === "داخل خانقين") return 2000;
@@ -227,12 +240,12 @@
                     img.onload = function() {
                         const canvas = document.createElement("canvas");
                         let w = img.width, h = img.height;
-                        const max = 400;
+                        const max = 250; // تصغير الحجم جداً لسرعة فائقة ومنع امتلاء الذاكرة
                         if (w > h && w > max) { h *= max / w; w = max; }
                         else if (h > max) { w *= max / h; h = max; }
                         canvas.width = w; canvas.height = h;
                         canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-                        const b64 = canvas.toDataURL("image/jpeg", 0.6);
+                        const b64 = canvas.toDataURL("image/jpeg", 0.4);
                         activeImages.push(b64);
                         renderThumbs();
                     };
@@ -264,7 +277,7 @@
         }
 
         function handleSearch() {
-            searchQuery = document.getElementById("searchInput").value.trim().toLowerCase();
+            searchQuery = (document.getElementById("searchInput").value || "").trim().toLowerCase();
             renderUI();
         }
 
@@ -294,7 +307,7 @@
             });
 
             if (filtered.length === 0) {
-                list.innerHTML = `<p style="text-align:center; color:#64748b; padding:25px;">لا توجد طلبات مطابقة</p>`;
+                list.innerHTML = `<p style="text-align:center; color:#64748b; padding:25px;">لا توجد طلبات مسجلة</p>`;
                 refreshStats();
                 return;
             }
@@ -355,4 +368,260 @@
             const code = document.getElementById("cCode").value.trim();
             const addr = document.getElementById("cAddr").value.trim();
             const price = parseFloat(document.getElementById("cPrice").value) || 0;
-            const m
+            const method = document.getElementById("cMethod").value;
+            const notes = document.getElementById("cNotes").value.trim();
+
+            if (!name) {
+                alert("يرجى إدخال اسم الزبون على الأقل");
+                return;
+            }
+
+            const fee = calcFee(method);
+            const total = price + fee;
+            const now = Date.now();
+
+            const newOrder = {
+                id: "id_" + now,
+                name, phone, 
+                code: code || '---', 
+                addr, price, fee, total, method, notes,
+                timestamp: now,
+                formattedDate: formatDateTime(now),
+                images: [...activeImages],
+                status: "قيد التجهيز"
+            };
+
+            // 1. يضاف فوراً أعلى المصفوفة وتُرسم الشاشة في أجزاء من الثانية
+            orders.unshift(newOrder);
+            safeSaveLocal();
+            renderUI();
+
+            // 2. تصفير الحقول
+            document.getElementById("cName").value = "";
+            document.getElementById("cPhone").value = "";
+            document.getElementById("cCode").value = "";
+            document.getElementById("cAddr").value = "";
+            document.getElementById("cPrice").value = "";
+            document.getElementById("cNotes").value = "";
+            document.getElementById("fileInput").value = "";
+            document.getElementById("previewArea").innerHTML = "";
+            activeImages = [];
+            recalc();
+
+            // 3. مزامنة سحابية هادئة بالخلفية
+            pushCloud();
+        }
+
+        function openEditModal(id) {
+            const o = orders.find(x => x.id === id);
+            if (!o) return;
+            document.getElementById("editId").value = o.id;
+            document.getElementById("editName").value = o.name || "";
+            document.getElementById("editPhone").value = o.phone || "";
+            document.getElementById("editCode").value = o.code || "";
+            document.getElementById("editAddr").value = o.addr || "";
+            document.getElementById("editPrice").value = o.price || 0;
+            document.getElementById("editMethod").value = o.method || "داخل خانقين";
+            document.getElementById("editNotes").value = o.notes || "";
+            document.getElementById("editModal").style.display = "flex";
+        }
+
+        function closeEditModal() {
+            document.getElementById("editModal").style.display = "none";
+        }
+
+        function saveEditedOrder() {
+            const id = document.getElementById("editId").value;
+            const name = document.getElementById("editName").value.trim();
+            const phone = document.getElementById("editPhone").value.trim();
+            const code = document.getElementById("editCode").value.trim();
+            const addr = document.getElementById("editAddr").value.trim();
+            const price = parseFloat(document.getElementById("editPrice").value) || 0;
+            const method = document.getElementById("editMethod").value;
+            const notes = document.getElementById("editNotes").value.trim();
+
+            if (!name) {
+                alert("يرجى كتابة اسم الزبون");
+                return;
+            }
+
+            const fee = calcFee(method);
+            const total = price + fee;
+
+            orders = orders.map(o => {
+                if (o.id === id) {
+                    return { ...o, name, phone, code, addr, price, fee, total, method, notes };
+                }
+                return o;
+            });
+
+            safeSaveLocal();
+            renderUI();
+            closeEditModal();
+            pushCloud();
+        }
+
+        function pushCloud() {
+            document.getElementById("netStatus").innerText = "⏳ جاري التحديث...";
+            fetch(FIREBASE_URL, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(orders)
+            }).then(() => {
+                document.getElementById("netStatus").innerText = "🟢 متزامن مع صديقك";
+            }).catch(() => {
+                document.getElementById("netStatus").innerText = "🟢 محفوظ على الهاتف";
+            });
+        }
+
+        function fetchOrders() {
+            fetch(FIREBASE_URL)
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        orders = data;
+                        safeSaveLocal();
+                        renderUI();
+                        document.getElementById("netStatus").innerText = "🟢 متزامن مع صديقك";
+                    }
+                }).catch(() => {});
+        }
+
+        function updateStatus(id, newStatus) {
+            orders = orders.map(o => o.id === id ? { ...o, status: newStatus } : o);
+            safeSaveLocal();
+            renderUI();
+            pushCloud();
+        }
+
+        function deleteOrder(id) {
+            if (confirm("هل تريد حذف هذا الطلب؟")) {
+                orders = orders.filter(o => o.id !== id);
+                safeSaveLocal();
+                renderUI();
+                pushCloud();
+            }
+        }
+
+        function filterTab(tab, btn) {
+            selectedTab = tab;
+            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            renderUI();
+        }
+
+        function b64toBlobFile(b64Data, filename) {
+            const parts = b64Data.split(';base64,');
+            const contentType = parts[0].split(':')[1];
+            const raw = window.atob(parts[1]);
+            const rawLength = raw.length;
+            const uInt8Array = new Uint8Array(rawLength);
+            for (let i = 0; i < rawLength; ++i) {
+                uInt8Array[i] = raw.charCodeAt(i);
+            }
+            return new File([uInt8Array], filename, { type: contentType });
+        }
+
+        async function executeShare(msg, images, title) {
+            if (images && images.length > 0 && navigator.share) {
+                try {
+                    const files = images.map((img, i) => b64toBlobFile(img, `item_${i + 1}.jpg`));
+                    if (navigator.canShare && navigator.canShare({ files: files })) {
+                        await navigator.share({ files: files, title: title, text: msg });
+                        return;
+                    }
+                } catch(err) {}
+            }
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function shareToCustomer(id) {
+            const o = orders.find(x => x.id === id);
+            if (!o) return;
+
+            const displayDate = o.formattedDate || formatDateTime(o.timestamp);
+            let msg = `مرحباً بك زبوننا العزيز 🌸\n` +
+                      `تم تأكيد طلبك بنجاح، إليك تفاصيل الوصل:\n` +
+                      `━━━━━━━━━━━━━━\n` +
+                      `🕒 *التاريخ:* ${displayDate}\n` +
+                      `👤 *الاسم:* ${o.name}\n` +
+                      `🏷️ *كود القطعة:* ${o.code || '---'}\n` +
+                      `📍 *عنوان التوصيل:* ${o.addr || 'غير محدد'}\n` +
+                      `💵 *سعر الطلب:* ${Number(o.price).toLocaleString()} دينار\n` +
+                      `🚚 *أجور التوصيل:* ${Number(o.fee).toLocaleString()} دينار\n` +
+                      `💰 *المبلغ الصافي المطلوب عند الاستلام:* ${Number(o.total).toLocaleString()} دينار\n`;
+            if (o.notes) msg += `📝 *ملاحظة:* ${o.notes}\n`;
+            msg += `━━━━━━━━━━━━━━\nنشكرك على ثقتك بنا ونتمنى لك يوماً سعيداً ❤️`;
+
+            executeShare(msg, o.images, 'وصل طلبك');
+        }
+
+        function shareToDriver(id) {
+            const o = orders.find(x => x.id === id);
+            if (!o) return;
+
+            const displayDate = o.formattedDate || formatDateTime(o.timestamp);
+            let msg = `🚚 *مهمة توصيل جديدة* 📦\n` +
+                      `━━━━━━━━━━━━━━\n` +
+                      `🕒 *تاريخ الطلب:* ${displayDate}\n` +
+                      `👤 *الزبون:* ${o.name}\n` +
+                      `📞 *رقم الهاتف:* ${o.phone || 'غير مسجل'}\n` +
+                      `📍 *العنوان:* ${o.addr || 'غير محدد'}\n` +
+                      `🏷️ *كود القطعة:* ${o.code || '---'}\n` +
+                      `💰 *المبلغ المطلوب قبضه من الزبون:* ${Number(o.total).toLocaleString()} دينار\n` +
+                      `🚚 *نوع الشحنة:* ${o.method}\n`;
+            if (o.notes) msg += `⚠️ *ملاحظات التوصيل:* ${o.notes}\n`;
+            msg += `━━━━━━━━━━━━━━\nيرجى التواصل مع الزبون قبل التوجه إليه.`;
+
+            executeShare(msg, o.images, 'مهمة توصيل');
+        }
+
+        function exportToExcel() {
+            if (orders.length === 0) {
+                alert("لا توجد طلبات لتصديرها حالياً!");
+                return;
+            }
+
+            let csvContent = "\uFEFF";
+            csvContent += "تاريخ الطلب,اسم الزبون,رقم الهاتف,كود القطعة,العنوان,طريقة التوصيل,السعر قبل التوصيل,أجور التوصيل,المجموع الكلي,الحالة,ملاحظات\n";
+
+            orders.forEach(o => {
+                const date = o.formattedDate || formatDateTime(o.timestamp);
+                const row = [
+                    `"${date}"`,
+                    `"${o.name || ''}"`,
+                    `"${o.phone || ''}"`,
+                    `"${o.code || ''}"`,
+                    `"${o.addr || ''}"`,
+                    `"${o.method || ''}"`,
+                    `"${o.price || 0}"`,
+                    `"${o.fee || 0}"`,
+                    `"${o.total || 0}"`,
+                    `"${o.status || ''}"`,
+                    `"${(o.notes || '').replace(/"/g, '""')}"`
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `تقرير_الطلبات.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function viewImg(src) {
+            document.getElementById("modalViewer").src = src;
+            document.getElementById("modal").style.display = "flex";
+        }
+
+        recalc();
+        renderUI();
+        fetchOrders();
+        setInterval(fetchOrders, 4000);
+    </script>
+</body>
+</html>
