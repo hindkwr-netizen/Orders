@@ -22,6 +22,9 @@
         input, select, textarea { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #475569; border-radius: 8px; font-size: 14px; background: #0f172a; color: #fff; }
         textarea { height: 50px; resize: vertical; }
 
+        .search-box { width: 100%; padding: 11px 14px; border: 2px solid #38bdf8; border-radius: 8px; font-size: 14px; background: #1e293b; color: #fff; margin-bottom: 12px; outline: none; }
+        .search-box::placeholder { color: #94a3b8; }
+
         .calc-box { background: #0f172a; border: 1px solid #38bdf8; padding: 10px; border-radius: 8px; font-size: 13px; color: #38bdf8; text-align: center; font-weight: bold; margin-bottom: 8px; line-height: 1.6; }
 
         .upload-btn { display: block; background: #334155; padding: 9px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px dashed #38bdf8; margin-bottom: 8px; color: #38bdf8; }
@@ -53,13 +56,19 @@
         .action-btns { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
         .action-btns button, .action-btns a { border: 0; padding: 6px 9px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; text-decoration: none; }
         .btn-call { background: #22c55e; color: #fff; }
-        .btn-wa { background: #25d366; color: #fff; }
+        .btn-wa-cust { background: #25d366; color: #fff; }
+        .btn-wa-driver { background: #0284c7; color: #fff; }
+        .btn-edit { background: #f59e0b; color: #1e293b; }
         .btn-status-ship { background: #0284c7; color: #fff; }
         .btn-status-done { background: #059669; color: #fff; }
         .btn-status-back { background: #dc2626; color: #fff; }
         .btn-del { background: #7f1d1d; color: #fca5a5; margin-right: auto; }
 
-        .img-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; }
+        /* نوافذ منبثقة */
+        .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; padding: 12px; }
+        .modal-content { background: #1e293b; border-radius: 12px; padding: 16px; width: 100%; max-width: 420px; border: 1px solid #475569; max-height: 90vh; overflow-y: auto; }
+        .modal-title { font-size: 16px; font-weight: bold; margin-bottom: 12px; color: #38bdf8; text-align: center; }
+        .modal-close { background: #475569; color: #fff; border: 0; padding: 10px; width: 100%; border-radius: 8px; font-weight: bold; margin-top: 6px; cursor: pointer; }
         .img-modal img { max-width: 95%; max-height: 90%; border-radius: 8px; }
     </style>
 </head>
@@ -84,6 +93,9 @@
             <div class="stat-val" id="boxTotal">0 د.ع</div>
         </div>
     </div>
+
+    <!-- خانة البحث السريع -->
+    <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث بالاسم، رقم الهاتف، أو كود القطعة..." oninput="handleSearch()">
 
     <div class="box">
         <h3 style="margin-bottom: 10px; font-size: 15px;">إضافة طلب جديد 📦</h3>
@@ -125,7 +137,36 @@
 
     <div id="ordersList"></div>
 
-    <div id="modal" class="img-modal" onclick="this.style.display='none'">
+    <!-- نافذة تعديل الطلب -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">✏️ تعديل بيانات الطلب</div>
+            <input type="hidden" id="editId">
+            <label style="font-size:12px; color:#94a3b8;">اسم الزبون:</label>
+            <input type="text" id="editName">
+            <label style="font-size:12px; color:#94a3b8;">رقم الهاتف:</label>
+            <input type="tel" id="editPhone">
+            <label style="font-size:12px; color:#94a3b8;">كود القطعة:</label>
+            <input type="text" id="editCode">
+            <label style="font-size:12px; color:#94a3b8;">العنوان:</label>
+            <input type="text" id="editAddr">
+            <label style="font-size:12px; color:#94a3b8;">السعر قبل التوصيل:</label>
+            <input type="number" id="editPrice">
+            <label style="font-size:12px; color:#94a3b8;">طريقة التوصيل:</label>
+            <select id="editMethod">
+                <option value="داخل خانقين">داخل خانقين (+2,000 د.ع)</option>
+                <option value="المحافظات">خارج خانقين / المحافظات (+5,000 د.ع)</option>
+                <option value="بدون توصيل">بدون توصيل (0 د.ع)</option>
+            </select>
+            <label style="font-size:12px; color:#94a3b8;">ملاحظات:</label>
+            <textarea id="editNotes"></textarea>
+            <button class="btn-add" style="background:#059669; margin-top:8px;" onclick="saveEditedOrder()">💾 حفظ التعديلات</button>
+            <button class="modal-close" onclick="closeEditModal()">إلغاء</button>
+        </div>
+    </div>
+
+    <!-- نافذة تكبير الصورة -->
+    <div id="modal" class="modal img-modal" onclick="this.style.display='none'">
         <img id="modalViewer" src="">
     </div>
 
@@ -135,6 +176,7 @@
 
         let orders = [];
         let selectedTab = "all";
+        let searchQuery = "";
         let activeImages = [];
 
         try {
@@ -203,24 +245,40 @@
             document.getElementById("boxTotal").innerText = total.toLocaleString() + " د.ع";
         }
 
+        function handleSearch() {
+            searchQuery = document.getElementById("searchInput").value.trim().toLowerCase();
+            renderUI();
+        }
+
         function renderUI() {
             const list = document.getElementById("ordersList");
             list.innerHTML = "";
             document.getElementById("totalBadge").innerText = orders.length;
 
-            if (orders.length === 0) {
-                list.innerHTML = `<p style="text-align:center; color:#64748b; padding:25px;">لا توجد طلبات مسجلة</p>`;
+            let filtered = orders.filter(o => {
+                let matchesTab = true;
+                if (selectedTab === "داخل خانقين") matchesTab = (o.method === "داخل خانقين");
+                else if (selectedTab === "المحافظات") matchesTab = (o.method === "المحافظات");
+                else if (selectedTab === "بدون توصيل") matchesTab = (o.method === "بدون توصيل");
+                else if (selectedTab !== "all") matchesTab = (o.status === selectedTab);
+
+                if (!matchesTab) return false;
+
+                if (searchQuery) {
+                    const name = (o.name || "").toLowerCase();
+                    const phone = (o.phone || "").toLowerCase();
+                    const code = (o.code || "").toLowerCase();
+                    const addr = (o.addr || "").toLowerCase();
+                    return name.includes(searchQuery) || phone.includes(searchQuery) || code.includes(searchQuery) || addr.includes(searchQuery);
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                list.innerHTML = `<p style="text-align:center; color:#64748b; padding:25px;">لا توجد طلبات مطابقة</p>`;
                 refreshStats();
                 return;
             }
-
-            let filtered = orders.filter(o => {
-                if (selectedTab === "all") return true;
-                if (selectedTab === "داخل خانقين") return o.method === "داخل خانقين";
-                if (selectedTab === "المحافظات") return o.method === "المحافظات";
-                if (selectedTab === "بدون توصيل") return o.method === "بدون توصيل";
-                return o.status === selectedTab;
-            });
 
             filtered.forEach(o => {
                 let statusClass = "pending";
@@ -252,7 +310,9 @@
                         ${o.notes ? `<div class="note-tag">📝 ${o.notes}</div>` : ''}
                         <div class="action-btns">
                             ${o.phone ? `<a href="tel:${o.phone}" class="btn-call">📞 اتصال</a>` : ''}
-                            <button class="btn-wa" onclick="shareToWhatsApp('${o.id}')">📤 مشاركة الوصل والصور</button>
+                            <button class="btn-wa-cust" onclick="shareToCustomer('${o.id}')">👤 وصل الزبون</button>
+                            <button class="btn-wa-driver" onclick="shareToDriver('${o.id}')">🚚 وصل المندوب</button>
+                            <button class="btn-edit" onclick="openEditModal('${o.id}')">✏️ تعديل</button>
                             <button class="btn-status-ship" onclick="updateStatus('${o.id}', 'بالطريق')">بالطريق</button>
                             <button class="btn-status-done" onclick="updateStatus('${o.id}', 'واصل')">واصل</button>
                             <button class="btn-status-back" onclick="updateStatus('${o.id}', 'راجع')">راجع</button>
@@ -307,6 +367,55 @@
             pushCloud();
         }
 
+        function openEditModal(id) {
+            const o = orders.find(x => x.id === id);
+            if (!o) return;
+            document.getElementById("editId").value = o.id;
+            document.getElementById("editName").value = o.name || "";
+            document.getElementById("editPhone").value = o.phone || "";
+            document.getElementById("editCode").value = o.code || "";
+            document.getElementById("editAddr").value = o.addr || "";
+            document.getElementById("editPrice").value = o.price || 0;
+            document.getElementById("editMethod").value = o.method || "داخل خانقين";
+            document.getElementById("editNotes").value = o.notes || "";
+            document.getElementById("editModal").style.display = "flex";
+        }
+
+        function closeEditModal() {
+            document.getElementById("editModal").style.display = "none";
+        }
+
+        function saveEditedOrder() {
+            const id = document.getElementById("editId").value;
+            const name = document.getElementById("editName").value.trim();
+            const phone = document.getElementById("editPhone").value.trim();
+            const code = document.getElementById("editCode").value.trim();
+            const addr = document.getElementById("editAddr").value.trim();
+            const price = parseFloat(document.getElementById("editPrice").value) || 0;
+            const method = document.getElementById("editMethod").value;
+            const notes = document.getElementById("editNotes").value.trim();
+
+            if (!name) {
+                alert("يرجى كتابة اسم الزبون");
+                return;
+            }
+
+            const fee = calcFee(method);
+            const total = price + fee;
+
+            orders = orders.map(o => {
+                if (o.id === id) {
+                    return { ...o, name, phone, code, addr, price, fee, total, method, notes };
+                }
+                return o;
+            });
+
+            localStorage.setItem(LOCAL_KEY, JSON.stringify(orders));
+            renderUI();
+            closeEditModal();
+            pushCloud();
+        }
+
         function pushCloud() {
             document.getElementById("netStatus").innerText = "⏳ جاري التحديث...";
             fetch(FIREBASE_URL, {
@@ -356,7 +465,6 @@
             renderUI();
         }
 
-        // تحويل قاعدة الصورة النصية إلى ملف حقيقي يتعرف عليه واتساب
         function b64toBlobFile(b64Data, filename) {
             const parts = b64Data.split(';base64,');
             const contentType = parts[0].split(':')[1];
@@ -369,40 +477,56 @@
             return new File([uInt8Array], filename, { type: contentType });
         }
 
-        async function shareToWhatsApp(id) {
+        async function executeShare(msg, images, title) {
+            if (images && images.length > 0 && navigator.share) {
+                try {
+                    const files = images.map((img, i) => b64toBlobFile(img, `item_${i + 1}.jpg`));
+                    if (navigator.canShare && navigator.canShare({ files: files })) {
+                        await navigator.share({ files: files, title: title, text: msg });
+                        return;
+                    }
+                } catch(err) {}
+            }
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        // 1. وصل مخصص للزبون (ترحيبي وتفصيلي)
+        function shareToCustomer(id) {
             const o = orders.find(x => x.id === id);
             if (!o) return;
 
-            let msg = `📄 *وصل تفاصيل الطلب* 📦\n` +
+            let msg = `مرحباً بك زبوننا العزيز 🌸\n` +
+                      `تم تأكيد طلبك بنجاح، إليك تفاصيل الوصل:\n` +
                       `━━━━━━━━━━━━━━\n` +
                       `👤 *الاسم:* ${o.name}\n` +
-                      `📞 *الهاتف:* ${o.phone || 'غير مسجل'}\n` +
                       `🏷️ *كود القطعة:* ${o.code || '---'}\n` +
+                      `📍 *عنوان التوصيل:* ${o.addr || 'غير محدد'}\n` +
+                      `💵 *سعر الطلب:* ${Number(o.price).toLocaleString()} دينار\n` +
+                      `🚚 *أجور التوصيل:* ${Number(o.fee).toLocaleString()} دينار\n` +
+                      `💰 *المبلغ الصافي المطلوب عند الاستلام:* ${Number(o.total).toLocaleString()} دينار\n`;
+            if (o.notes) msg += `📝 *ملاحظة:* ${o.notes}\n`;
+            msg += `━━━━━━━━━━━━━━\nنشكرك على ثقتك بنا ونتمنى لك يوماً سعيداً ❤️`;
+
+            executeShare(msg, o.images, 'وصل طلبك');
+        }
+
+        // 2. وصل مخصص للمندوب (مباشر ومختصر للتسليم السريع)
+        function shareToDriver(id) {
+            const o = orders.find(x => x.id === id);
+            if (!o) return;
+
+            let msg = `🚚 *مهمة توصيل جديدة* 📦\n` +
+                      `━━━━━━━━━━━━━━\n` +
+                      `👤 *الزبون:* ${o.name}\n` +
+                      `📞 *رقم الهاتف:* ${o.phone || 'غير مسجل'}\n` +
                       `📍 *العنوان:* ${o.addr || 'غير محدد'}\n` +
-                      `💵 *السعر قبل التوصيل:* ${Number(o.price).toLocaleString()} دينار\n` +
-                      `🚚 *أجور التوصيل:* ${Number(o.fee).toLocaleString()} دينار (${o.method})\n` +
-                      `💰 *السعر بعد التوصيل (المجموع):* ${Number(o.total).toLocaleString()} دينار\n`;
-            if (o.notes) msg += `📝 *ملاحظات:* ${o.notes}\n`;
+                      `🏷️ *كود القطعة:* ${o.code || '---'}\n` +
+                      `💰 *المبلغ المطلوب قبضه من الزبون:* ${Number(o.total).toLocaleString()} دينار\n` +
+                      `🚚 *نوع الشحنة:* ${o.method}\n`;
+            if (o.notes) msg += `⚠️ *ملاحظات التوصيل:* ${o.notes}\n`;
+            msg += `━━━━━━━━━━━━━━\nيرجى التواصل مع الزبون قبل التوجه إليه.`;
 
-            // مشاركة الملفات الحقيقية عبر واجهة النظام الأصلية
-            if (o.images && o.images.length > 0 && navigator.share) {
-                try {
-                    const files = o.images.map((img, i) => b64toBlobFile(img, `order_item_${i + 1}.jpg`));
-                    if (navigator.canShare && navigator.canShare({ files: files })) {
-                        await navigator.share({
-                            files: files,
-                            title: 'وصل الطلب',
-                            text: msg
-                        });
-                        return;
-                    }
-                } catch(err) {
-                    console.log("Share cancelled or failed");
-                }
-            }
-
-            // تحويل احتياطي مباشر في حال عدم توفر صور
-            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+            executeShare(msg, o.images, 'مهمة توصيل');
         }
 
         function viewImg(src) {
