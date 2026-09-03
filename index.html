@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة الطلبات المزامنة</title>
+    <title>إدارة الطلبات المباشرة</title>
     <style>
         * { box-sizing: border-box; font-family: Tahoma, Arial, sans-serif; margin: 0; padding: 0; }
         body { background: #0f172a; padding: 12px; color: #f8fafc; direction: rtl; }
         
-        .sync-box { background: #1e293b; border: 1px solid #38bdf8; padding: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .sync-text { font-size: 12px; font-weight: bold; }
+        .sync-box { background: #1e293b; border: 1px solid #10b981; padding: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .sync-text { font-size: 12px; font-weight: bold; color: #34d399; }
         .btn-sync { background: #0284c7; color: white; border: none; padding: 7px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
 
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
@@ -53,8 +53,8 @@
 <body>
 
     <div class="sync-box">
-        <span class="sync-text" id="statusMsg">🟢 متصل بالسحابة المشتركة</span>
-        <button class="btn-sync" onclick="syncFromCloud()">🔄 سحب التحديثات</button>
+        <span class="sync-text" id="statusMsg">🟢 متصل بقاعدة البيانات السحابية</span>
+        <button class="btn-sync" onclick="loadFromCloud()">🔄 تحديث الآن</button>
     </div>
 
     <div class="stats-grid">
@@ -99,22 +99,15 @@
     <div id="ordersContainer"></div>
 
     <script>
-        // رابط قاعدة بيانات سحابية مفتوحة ومجانية للمزامنة الفورية
-        const DB_KEY = "orders_shared_iq_khan";
-        const CLOUD_URL = `https://jsonblob.com/api/jsonBlob/1203000000000000001`;
+        // رابط قاعدة بياناتك المباشر من Google Firebase
+        const FIREBASE_ENDPOINT = "https://orders-99674-default-rtdb.firebaseio.com/orders.json";
 
-        let allOrders = [];
+        let allOrders = {};
         let activeTab = 'all';
 
-        // تحميل من الذاكرة المحلية كبداية
-        try {
-            const raw = localStorage.getItem(DB_KEY);
-            if (raw) allOrders = JSON.parse(raw);
-        } catch(e) {}
-
-        function updateTotals() {
+        function updateTotals(ordersList) {
             let done = 0, road = 0, total = 0;
-            allOrders.forEach(o => {
+            ordersList.forEach(o => {
                 const val = Number(o.price) || 0;
                 if (o.status === 'تم التسليم') done += val;
                 if (o.status === 'بالطريق' || o.status === 'قيد التجهيز') road += val;
@@ -126,29 +119,32 @@
         }
 
         function drawList() {
-            document.getElementById('countTotal').innerText = allOrders.length;
             const container = document.getElementById('ordersContainer');
             container.innerHTML = '';
 
-            let filtered = allOrders.filter(o => {
+            const ordersList = Object.keys(allOrders).map(key => ({ ...allOrders[key], firebaseId: key }));
+            document.getElementById('countTotal').innerText = ordersList.length;
+
+            let filtered = ordersList.filter(o => {
                 if (activeTab === 'all') return true;
-                if (activeTab === 'صديقي') return o.by.includes('صديقي');
-                if (activeTab === 'شركة') return o.by.includes('شركة');
+                if (activeTab === 'صديقي') return o.by && o.by.includes('صديقي');
+                if (activeTab === 'شركة') return o.by && o.by.includes('شركة');
                 return o.status === activeTab;
             });
 
             if (filtered.length === 0) {
-                container.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">لا توجد طلبات حالياً</p>';
+                container.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">لا توجد طلبات مسجلة</p>';
+                updateTotals(ordersList);
                 return;
             }
 
-            filtered.forEach(o => {
+            filtered.reverse().forEach(o => {
                 let cls = 'pending';
                 if (o.status === 'بالطريق') cls = 'shipping';
                 if (o.status === 'تم التسليم') cls = 'done';
                 if (o.status === 'راجع') cls = 'returned';
 
-                let bCls = o.by.includes('صديقي') ? 'b-friend' : 'b-comp';
+                let bCls = (o.by && o.by.includes('صديقي')) ? 'b-friend' : 'b-comp';
 
                 container.innerHTML += `
                     <div class="card ${cls}">
@@ -165,52 +161,34 @@
                         ${o.notes ? `<div class="notes-box">📝 ${o.notes}</div>` : ''}
                         <div class="btns">
                             ${o.phone ? `<a href="tel:${o.phone}" class="call">📞 اتصال</a>` : ''}
-                            <button class="share" onclick="sendWhatsApp(${o.id})">📲 واتساب</button>
-                            <button class="btn-act" style="background:#0284c7; color:#fff;" onclick="changeStatus(${o.id}, 'بالطريق')">بالطريق</button>
-                            <button class="btn-act" style="background:#059669; color:#fff;" onclick="changeStatus(${o.id}, 'تم التسليم')">واصل</button>
-                            <button class="btn-act" style="background:#dc2626; color:#fff;" onclick="changeStatus(${o.id}, 'راجع')">راجع</button>
-                            <button class="btn-act del" onclick="removeOrder(${o.id})">حذف</button>
+                            <button class="share" onclick="sendWhatsApp('${o.firebaseId}')">📲 واتساب</button>
+                            <button class="btn-act" style="background:#0284c7; color:#fff;" onclick="changeStatus('${o.firebaseId}', 'بالطريق')">بالطريق</button>
+                            <button class="btn-act" style="background:#059669; color:#fff;" onclick="changeStatus('${o.firebaseId}', 'تم التسليم')">واصل</button>
+                            <button class="btn-act" style="background:#dc2626; color:#fff;" onclick="changeStatus('${o.firebaseId}', 'راجع')">راجع</button>
+                            <button class="btn-act del" onclick="removeOrder('${o.firebaseId}')">حذف</button>
                         </div>
                     </div>
                 `;
             });
+
+            updateTotals(ordersList);
         }
 
-        async function pushToCloud() {
-            document.getElementById('statusMsg').innerText = '⏳ جاري الحفظ في السحابة...';
+        async function loadFromCloud() {
             try {
-                localStorage.setItem(DB_KEY, JSON.stringify(allOrders));
-                await fetch(CLOUD_URL, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify(allOrders)
-                });
-                document.getElementById('statusMsg').innerText = '🟢 محفوظ ومتاح لصديقك';
+                const res = await fetch(FIREBASE_ENDPOINT);
+                if (res.ok) {
+                    const data = await res.json();
+                    allOrders = data || {};
+                    drawList();
+                    document.getElementById('statusMsg').innerText = '🟢 البيانات متزامنة فورياً';
+                }
             } catch(e) {
-                document.getElementById('statusMsg').innerText = '⚠️ تم الحفظ محلياً فقط';
+                document.getElementById('statusMsg').innerText = '⚠️ تعذر الاتصال بالسيرفر';
             }
         }
 
-        async function syncFromCloud() {
-            document.getElementById('statusMsg').innerText = '🔄 جاري جلب طلبات صديقك...';
-            try {
-                const res = await fetch(CLOUD_URL);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (Array.isArray(data)) {
-                        allOrders = data;
-                        localStorage.setItem(DB_KEY, JSON.stringify(allOrders));
-                        updateTotals();
-                        drawList();
-                        document.getElementById('statusMsg').innerText = '🟢 تم تحديث كل الطلبات';
-                        return;
-                    }
-                }
-            } catch(e) {}
-            document.getElementById('statusMsg').innerText = '🟢 متصل بالسحابة المشتركة';
-        }
-
-        function saveNewOrder() {
+        async function saveNewOrder() {
             const name = document.getElementById('custName').value.trim();
             const phone = document.getElementById('custPhone').value.trim();
             const code = document.getElementById('itemCode').value.trim();
@@ -220,43 +198,49 @@
             const notes = document.getElementById('custNotes').value.trim();
 
             if (!name || !code) {
-                alert('يرجى ملء اسم الزبون وكود القطعة');
+                alert('يرجى كتابة اسم الزبون وكود القطعة');
                 return;
             }
 
-            const item = {
-                id: Date.now(),
-                name, phone, code, addr, price, by, notes,
-                status: 'قيد التجهيز'
-            };
+            const item = { name, phone, code, addr, price, by, notes, status: 'قيد التجهيز', date: Date.now() };
 
-            allOrders.unshift(item);
-            updateTotals();
-            drawList();
+            document.getElementById('statusMsg').innerText = '⏳ جاري الحفظ في السحابة...';
 
-            document.getElementById('custName').value = '';
-            document.getElementById('custPhone').value = '';
-            document.getElementById('itemCode').value = '';
-            document.getElementById('custAddr').value = '';
-            document.getElementById('itemPrice').value = '';
-            document.getElementById('custNotes').value = '';
-
-            pushToCloud();
+            try {
+                await fetch(FIREBASE_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(item)
+                });
+                
+                document.getElementById('custName').value = '';
+                document.getElementById('custPhone').value = '';
+                document.getElementById('itemCode').value = '';
+                document.getElementById('custAddr').value = '';
+                document.getElementById('itemPrice').value = '';
+                document.getElementById('custNotes').value = '';
+                
+                loadFromCloud();
+            } catch(e) {
+                alert('حدث خطأ في الاتصال');
+            }
         }
 
-        function changeStatus(id, st) {
-            allOrders = allOrders.map(o => o.id === id ? { ...o, status: st } : o);
-            updateTotals();
-            drawList();
-            pushToCloud();
+        async function changeStatus(id, newStatus) {
+            const updateUrl = FIREBASE_ENDPOINT.replace('.json', `/${id}.json`);
+            await fetch(updateUrl, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+            loadFromCloud();
         }
 
-        function removeOrder(id) {
-            if (confirm('هل تريد حذف هذا الطلب؟')) {
-                allOrders = allOrders.filter(o => o.id !== id);
-                updateTotals();
-                drawList();
-                pushToCloud();
+        async function removeOrder(id) {
+            if (confirm('هل تريد حذف هذا الطلب نهائياً؟')) {
+                const deleteUrl = FIREBASE_ENDPOINT.replace('.json', `/${id}.json`);
+                await fetch(deleteUrl, { method: 'DELETE' });
+                loadFromCloud();
             }
         }
 
@@ -268,7 +252,7 @@
         }
 
         function sendWhatsApp(id) {
-            const o = allOrders.find(x => x.id === id);
+            const o = allOrders[id];
             if (!o) return;
             let msg = `📦 تفاصيل طلب توصيل:\n` +
                       `👤 الزبون: ${o.name}\n` +
@@ -281,11 +265,9 @@
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
         }
 
-        updateTotals();
-        drawList();
-        syncFromCloud();
-        // فحص سحابي تلقائي كل 15 ثانية لجلب أي طلب جديد يكتبه صديقك
-        setInterval(syncFromCloud, 15000);
+        // مزامنة أوتوماتيكية كل 4 ثوانٍ لضمان ظهور أي طلب يسجله صديقك فوراً
+        loadFromCloud();
+        setInterval(loadFromCloud, 4000);
     </script>
 </body>
 </html>
