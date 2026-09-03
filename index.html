@@ -64,7 +64,7 @@
 
     <div class="sync-box">
         <span class="sync-text" id="statusMsg">🟢 النظام نشط</span>
-        <button class="btn-sync" onclick="loadFromCloud()">🔄 تحديث السحابة</button>
+        <button class="btn-sync" onclick="syncWithFirebase()">🔄 تحديث من السحابة</button>
     </div>
 
     <div class="stats-grid">
@@ -86,7 +86,7 @@
         <h3 style="margin-bottom: 10px; font-size: 15px;">إضافة طلب جديد 📦</h3>
         <input type="text" id="custName" placeholder="اسم الزبون (مطلوب)">
         <input type="tel" id="custPhone" placeholder="رقم الهاتف">
-        <input type="text" id="itemCode" placeholder="رقم / كود القطعة (مطلوب)">
+        <input type="text" id="itemCode" placeholder="رقم / كود القطعة">
         <input type="text" id="custAddr" placeholder="العنوان بالتفصيل">
         <input type="number" id="itemPrice" placeholder="السعر قبل التوصيل (دينار)" oninput="updateLiveCalc()">
         
@@ -103,7 +103,7 @@
 
         <textarea id="custNotes" placeholder="ملاحظات إضافية (اختياري)"></textarea>
 
-        <label class="file-label" for="itemImages">📷 اختيار سكرين شوت (اختياري)</label>
+        <label class="file-label" for="itemImages">📷 اختيار صور أو سكرين شوت (اختياري)</label>
         <input type="file" id="itemImages" accept="image/*" multiple style="display:none;" onchange="handleMultipleImages(event)">
         <div id="previewContainer" class="preview-list"></div>
 
@@ -128,17 +128,18 @@
 
     <script>
         const FIREBASE_ENDPOINT = "https://orders-99674-default-rtdb.firebaseio.com/orders.json";
-        const STORAGE_KEY = "orders_v3_secure_cache";
+        const STORAGE_KEY = "local_orders_data_store";
 
-        let allOrders = {};
+        // استخدام مصفوفة لسهولة وسرعة الإضافة والعرض المباشر
+        let ordersArray = [];
         let activeTab = 'all';
         let currentUploadedImages = [];
 
-        // استعادة البيانات المخزنة فوراً
+        // تحميل فوري من الذاكرة المحلية
         try {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                allOrders = JSON.parse(saved);
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                ordersArray = JSON.parse(raw);
             }
         } catch(e) {}
 
@@ -201,9 +202,9 @@
             });
         }
 
-        function updateTotals(ordersList) {
+        function updateTotals() {
             let done = 0, road = 0, total = 0;
-            ordersList.forEach(o => {
+            ordersArray.forEach(o => {
                 const itemP = Number(o.price) || 0;
                 const delP = (o.deliveryFee !== undefined) ? Number(o.deliveryFee) : getDeliveryFee(o.by);
                 const fullP = o.totalPrice ? Number(o.totalPrice) : (itemP + delP);
@@ -220,19 +221,15 @@
         function drawList() {
             const container = document.getElementById('ordersContainer');
             container.innerHTML = '';
+            document.getElementById('countTotal').innerText = ordersArray.length;
 
-            const keys = Object.keys(allOrders);
-            document.getElementById('countTotal').innerText = keys.length;
-
-            if (keys.length === 0) {
+            if (ordersArray.length === 0) {
                 container.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">لا توجد طلبات مسجلة حالياً</p>';
-                updateTotals([]);
+                updateTotals();
                 return;
             }
 
-            const ordersList = keys.map(key => ({ ...allOrders[key], firebaseId: key }));
-
-            let filtered = ordersList.filter(o => {
+            let filtered = ordersArray.filter(o => {
                 if (activeTab === 'all') return true;
                 if (activeTab === 'داخل خانقين') return o.by && o.by.includes('داخل خانقين');
                 if (activeTab === 'المحافظات') return o.by && o.by.includes('المحافظات');
@@ -240,7 +237,7 @@
                 return o.status === activeTab;
             });
 
-            filtered.reverse().forEach(o => {
+            filtered.forEach(o => {
                 let cls = 'pending';
                 if (o.status === 'بالطريق') cls = 'shipping';
                 if (o.status === 'تم التسليم') cls = 'done';
@@ -265,7 +262,7 @@
                     <div class="card ${cls}">
                         <div class="card-top">
                             <span class="title">${o.name}</span>
-                            <span class="code">كود: ${o.code}</span>
+                            <span class="code">كود: ${o.code || '---'}</span>
                         </div>
                         <div class="info">
                             📍 ${o.addr || 'بدون عنوان'}<br>
@@ -278,33 +275,17 @@
                         ${o.notes ? `<div class="notes-box">📝 ${o.notes}</div>` : ''}
                         <div class="btns">
                             ${o.phone ? `<a href="tel:${o.phone}" class="call">📞 اتصال</a>` : ''}
-                            <button class="share" onclick="shareWithWhatsApp('${o.firebaseId}')">📤 مشاركة الوصل</button>
-                            <button class="btn-act" style="background:#0284c7; color:#fff;" onclick="changeStatus('${o.firebaseId}', 'بالطريق')">بالطريق</button>
-                            <button class="btn-act" style="background:#059669; color:#fff;" onclick="changeStatus('${o.firebaseId}', 'تم التسليم')">واصل</button>
-                            <button class="btn-act" style="background:#dc2626; color:#fff;" onclick="changeStatus('${o.firebaseId}', 'راجع')">راجع</button>
-                            <button class="btn-act del" onclick="removeOrder('${o.firebaseId}')">حذف</button>
+                            <button class="share" onclick="shareWithWhatsApp('${o.id}')">📤 مشاركة الوصل</button>
+                            <button class="btn-act" style="background:#0284c7; color:#fff;" onclick="changeStatus('${o.id}', 'بالطريق')">بالطريق</button>
+                            <button class="btn-act" style="background:#059669; color:#fff;" onclick="changeStatus('${o.id}', 'تم التسليم')">واصل</button>
+                            <button class="btn-act" style="background:#dc2626; color:#fff;" onclick="changeStatus('${o.id}', 'راجع')">راجع</button>
+                            <button class="btn-act del" onclick="removeOrder('${o.id}')">حذف</button>
                         </div>
                     </div>
                 `;
             });
 
-            updateTotals(ordersList);
-        }
-
-        async function loadFromCloud() {
-            try {
-                const res = await fetch(FIREBASE_ENDPOINT);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && typeof data === 'object') {
-                        // دمج البيانات السحابية مع المحلية لضمان عدم مسح أي شيء
-                        allOrders = { ...allOrders, ...data };
-                        localStorage.setItem(STORAGE_KEY, JSON.stringify(allOrders));
-                        drawList();
-                        document.getElementById('statusMsg').innerText = '🟢 متزامن مع صديقك';
-                    }
-                }
-            } catch(e) {}
+            updateTotals();
         }
 
         function saveNewOrder() {
@@ -317,30 +298,30 @@
             const notes = document.getElementById('custNotes').value.trim();
 
             if (!name) {
-                alert('يرجى كتابة اسم الزبون');
+                alert('يرجى كتابة اسم الزبون أولاً');
                 return;
             }
 
             const deliveryFee = getDeliveryFee(by);
             const totalPrice = price + deliveryFee;
 
-            const item = { 
-                name, phone, code: code || '---', addr, price, 
+            const newItem = { 
+                id: 'id_' + Date.now(),
+                name, phone, 
+                code: code || '---', 
+                addr, price, 
                 deliveryFee, totalPrice, by, notes, 
                 images: [...currentUploadedImages],
                 status: 'قيد التجهيز', 
                 date: Date.now() 
             };
 
-            // 1. توليد مفتاح دائم وتثبيت الطلب فوراً على الشاشة
-            const orderKey = 'ord_' + Date.now();
-            allOrders[orderKey] = item;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(allOrders));
-            
-            // إعادة رسم الواجهة ليظهر الطلب بالأسفل في نفس اللحظة
+            // 1. الإضافة الفورية في أعلى القائمة
+            ordersArray.unshift(newItem);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(ordersArray));
             drawList();
 
-            // 2. تصفير الحقول
+            // 2. تفريغ الحقول
             document.getElementById('custName').value = '';
             document.getElementById('custPhone').value = '';
             document.getElementById('itemCode').value = '';
@@ -354,28 +335,50 @@
 
             document.getElementById('statusMsg').innerText = '⏳ جاري الحفظ لصديقك...';
 
-            // 3. رفعه لـ Firebase مباشرة بنفس المفتاح
-            const saveUrl = FIREBASE_ENDPOINT.replace('.json', `/${orderKey}.json`);
-            fetch(saveUrl, {
+            // 3. الحفظ السحابي
+            fetch(FIREBASE_ENDPOINT, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(item)
+                body: JSON.stringify(ordersArray)
             }).then(() => {
-                document.getElementById('statusMsg').innerText = '🟢 وصل لصديقك بنجاح';
+                document.getElementById('statusMsg').innerText = '🟢 تم الحفظ والمزامنة بنجاح';
             }).catch(() => {
-                document.getElementById('statusMsg').innerText = '🟢 محفوظ بجهازك';
+                document.getElementById('statusMsg').innerText = '🟢 محفوظ على هاتفك';
             });
         }
 
+        async function syncWithFirebase() {
+            try {
+                const res = await fetch(FIREBASE_ENDPOINT);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data)) {
+                        ordersArray = data;
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(ordersArray));
+                        drawList();
+                        document.getElementById('statusMsg').innerText = '🟢 متزامن مع صديقك';
+                    }
+                }
+            } catch(e) {}
+        }
+
         function changeStatus(id, newStatus) {
-            if (allOrders[id]) {
-                allOrders[id].status = newStatus;
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(allOrders));
-                drawList();
-            }
-            const updateUrl = FIREBASE_ENDPOINT.replace('.json', `/${id}.json`);
-            fetch(updateUrl, {
-                method: 'PATCH',
+            ordersArray = ordersArray.map(o => o.id === id ? { ...o, status: newStatus } : o);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(ordersArray));
+            drawList();
+            fetch(FIREBASE_ENDPOINT, {
+                method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus })
-            }
+                body: JSON.stringify(ordersArray)
+            }).catch(() => {});
+        }
+
+        function removeOrder(id) {
+            if (confirm('هل تريد بالتأكيد حذف هذا الطلب؟')) {
+                ordersArray = ordersArray.filter(o => o.id !== id);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(ordersArray));
+                drawList();
+                fetch(FIREBASE_ENDPOINT, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+            
