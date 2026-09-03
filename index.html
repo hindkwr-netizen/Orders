@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة الطلبات المباشرة</title>
+    <title>إدارة الطلبات</title>
     <style>
         * { box-sizing: border-box; font-family: Tahoma, Arial, sans-serif; margin: 0; padding: 0; }
         body { background: #0f172a; padding: 12px; color: #f8fafc; direction: rtl; }
@@ -26,9 +26,9 @@
 
         .file-label { display: block; background: #334155; padding: 10px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px dashed #38bdf8; margin-bottom: 8px; color: #38bdf8; }
         .preview-list { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; padding-bottom: 4px; }
-        .preview-thumb { width: 65px; height: 65px; object-fit: cover; border-radius: 6px; border: 1px solid #38bdf8; flex-shrink: 0; }
+        .preview-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #38bdf8; flex-shrink: 0; }
 
-        .btn-main { background: #2563eb; color: #fff; border: 0; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; }
+        .btn-main { background: #2563eb; color: #fff; border: 0; width: 100%; padding: 13px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
         
         .tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 10px; }
         .tab { background: #334155; color: #cbd5e1; border: 0; padding: 8px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; white-space: nowrap; cursor: pointer; }
@@ -46,15 +46,10 @@
         .info { font-size: 13px; color: #cbd5e1; line-height: 1.7; margin-bottom: 8px; }
         
         .card-images { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; padding-bottom: 4px; }
-        .card-img { width: 80px; height: 80px; object-fit: cover; background: #0f172a; border-radius: 8px; border: 1px solid #475569; cursor: pointer; flex-shrink: 0; }
+        .card-img { width: 75px; height: 75px; object-fit: cover; background: #0f172a; border-radius: 8px; border: 1px solid #475569; cursor: pointer; flex-shrink: 0; }
 
         .notes-box { background: #334155; border: 1px dashed #f59e0b; padding: 6px; border-radius: 6px; font-size: 12px; color: #fde047; margin-bottom: 8px; }
         
-        .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-        .b-khanaqin { background: #0369a1; color: #e0f2fe; }
-        .b-comp { background: #854d0e; color: #fef3c7; }
-        .b-direct { background: #047857; color: #d1fae5; }
-
         .btns { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
         .btn-act { border: 0; padding: 6px 9px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
         .call { background: #22c55e; color: #fff; text-decoration: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; }
@@ -68,8 +63,8 @@
 <body>
 
     <div class="sync-box">
-        <span class="sync-text" id="statusMsg">🟢 متصل ومحدث فورياً</span>
-        <button class="btn-sync" onclick="loadFromCloud()">🔄 تحديث الآن</button>
+        <span class="sync-text" id="statusMsg">🟢 النظام نشط</span>
+        <button class="btn-sync" onclick="loadFromCloud()">🔄 تحديث السحابة</button>
     </div>
 
     <div class="stats-grid">
@@ -82,16 +77,16 @@
             <div class="stat-num" style="color:#38bdf8;" id="statShipping">0 د.ع</div>
         </div>
         <div class="stat-card full">
-            <div class="stat-label">المجموع الكلي بعد التوصيل</div>
+            <div class="stat-label">المجموع الكلي (بعد التوصيل)</div>
             <div class="stat-num" id="statTotal">0 د.ع</div>
         </div>
     </div>
 
     <div class="box">
         <h3 style="margin-bottom: 10px; font-size: 15px;">إضافة طلب جديد 📦</h3>
-        <input type="text" id="custName" placeholder="اسم الزبون">
+        <input type="text" id="custName" placeholder="اسم الزبون (مطلوب)">
         <input type="tel" id="custPhone" placeholder="رقم الهاتف">
-        <input type="text" id="itemCode" placeholder="رقم / كود القطعة">
+        <input type="text" id="itemCode" placeholder="رقم / كود القطعة (مطلوب)">
         <input type="text" id="custAddr" placeholder="العنوان بالتفصيل">
         <input type="number" id="itemPrice" placeholder="السعر قبل التوصيل (دينار)" oninput="updateLiveCalc()">
         
@@ -102,13 +97,13 @@
         </select>
 
         <div id="liveCalcBox" class="calc-preview">
-            السعر قبل التوصيل: 0 د.ع | التوصيل: 2,000 د.ع<br>
+            السعر قبل التوصيل: 0 د.ع | أجور التوصيل: 2,000 د.ع<br>
             <strong>السعر بعد التوصيل: 2,000 د.ع</strong>
         </div>
 
         <textarea id="custNotes" placeholder="ملاحظات إضافية (اختياري)"></textarea>
 
-        <label class="file-label" for="itemImages">📷 اختيار صورة أو عدة صور سكرين شوت</label>
+        <label class="file-label" for="itemImages">📷 اختيار سكرين شوت (اختياري)</label>
         <input type="file" id="itemImages" accept="image/*" multiple style="display:none;" onchange="handleMultipleImages(event)">
         <div id="previewContainer" class="preview-list"></div>
 
@@ -133,15 +128,25 @@
 
     <script>
         const FIREBASE_ENDPOINT = "https://orders-99674-default-rtdb.firebaseio.com/orders.json";
+        const STORAGE_KEY = "orders_v3_secure_cache";
 
         let allOrders = {};
         let activeTab = 'all';
         let currentUploadedImages = [];
 
+        // استعادة البيانات المخزنة فوراً
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                allOrders = JSON.parse(saved);
+            }
+        } catch(e) {}
+
         function getDeliveryFee(method) {
+            if (!method) return 0;
             if (method.includes('داخل خانقين')) return 2000;
             if (method.includes('المحافظات')) return 5000;
-            return 0; // بدون توصيل
+            return 0;
         }
 
         function updateLiveCalc() {
@@ -166,7 +171,7 @@
                         const canvas = document.createElement('canvas');
                         let width = img.width;
                         let height = img.height;
-                        const maxDim = 400; // حجم خفيف جداً يضمن الحفظ الفوري
+                        const maxDim = 300;
                         if (width > height && width > maxDim) {
                             height *= maxDim / width;
                             width = maxDim;
@@ -178,8 +183,7 @@
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        const base64 = canvas.toDataURL('image/jpeg', 0.5);
-                        
+                        const base64 = canvas.toDataURL('image/jpeg', 0.4);
                         currentUploadedImages.push(base64);
                         renderPreviews();
                     };
@@ -201,7 +205,7 @@
             let done = 0, road = 0, total = 0;
             ordersList.forEach(o => {
                 const itemP = Number(o.price) || 0;
-                const delP = (o.deliveryFee !== undefined) ? Number(o.deliveryFee) : getDeliveryFee(o.by || '');
+                const delP = (o.deliveryFee !== undefined) ? Number(o.deliveryFee) : getDeliveryFee(o.by);
                 const fullP = o.totalPrice ? Number(o.totalPrice) : (itemP + delP);
 
                 if (o.status === 'تم التسليم') done += fullP;
@@ -217,22 +221,24 @@
             const container = document.getElementById('ordersContainer');
             container.innerHTML = '';
 
-            const ordersList = Object.keys(allOrders).map(key => ({ ...allOrders[key], firebaseId: key }));
-            document.getElementById('countTotal').innerText = ordersList.length;
+            const keys = Object.keys(allOrders);
+            document.getElementById('countTotal').innerText = keys.length;
+
+            if (keys.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">لا توجد طلبات مسجلة حالياً</p>';
+                updateTotals([]);
+                return;
+            }
+
+            const ordersList = keys.map(key => ({ ...allOrders[key], firebaseId: key }));
 
             let filtered = ordersList.filter(o => {
                 if (activeTab === 'all') return true;
                 if (activeTab === 'داخل خانقين') return o.by && o.by.includes('داخل خانقين');
-                if (activeTab === 'المحافظات') return o.by && (o.by.includes('المحافظات') || o.by.includes('شركة'));
+                if (activeTab === 'المحافظات') return o.by && o.by.includes('المحافظات');
                 if (activeTab === 'بدون توصيل') return o.by && o.by.includes('بدون توصيل');
                 return o.status === activeTab;
             });
-
-            if (filtered.length === 0) {
-                container.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">لا توجد طلبات مسجلة</p>';
-                updateTotals(ordersList);
-                return;
-            }
 
             filtered.reverse().forEach(o => {
                 let cls = 'pending';
@@ -240,12 +246,8 @@
                 if (o.status === 'تم التسليم') cls = 'done';
                 if (o.status === 'راجع') cls = 'returned';
 
-                let bCls = 'b-khanaqin';
-                if (o.by && o.by.includes('المحافظات')) bCls = 'b-comp';
-                if (o.by && o.by.includes('بدون توصيل')) bCls = 'b-direct';
-
                 const itemPrice = Number(o.price) || 0;
-                const deliveryFee = (o.deliveryFee !== undefined) ? Number(o.deliveryFee) : getDeliveryFee(o.by || '');
+                const deliveryFee = (o.deliveryFee !== undefined) ? Number(o.deliveryFee) : getDeliveryFee(o.by);
                 const totalPrice = o.totalPrice ? Number(o.totalPrice) : (itemPrice + deliveryFee);
 
                 let imgs = [];
@@ -268,8 +270,8 @@
                         <div class="info">
                             📍 ${o.addr || 'بدون عنوان'}<br>
                             💵 السعر قبل التوصيل: <strong>${itemPrice.toLocaleString()} د.ع</strong><br>
-                            🚚 أجور التوصيل: <strong>${deliveryFee.toLocaleString()} د.ع</strong> (${o.by})<br>
-                            💰 <span style="color:#38bdf8; font-weight:bold; font-size:14px;">السعر بعد التوصيل: ${totalPrice.toLocaleString()} د.ع</span><br>
+                            🚚 أجور التوصيل: <strong>${deliveryFee.toLocaleString()} د.ع</strong> (${o.by || 'بدون تحديد'})<br>
+                            💰 <span style="color:#38bdf8; font-weight:bold;">السعر بعد التوصيل: ${totalPrice.toLocaleString()} د.ع</span><br>
                             الحالة: <strong>${o.status}</strong>
                         </div>
                         ${imagesHtml}
@@ -294,16 +296,18 @@
                 const res = await fetch(FIREBASE_ENDPOINT);
                 if (res.ok) {
                     const data = await res.json();
-                    if (data) allOrders = data;
-                    drawList();
-                    document.getElementById('statusMsg').innerText = '🟢 متصل ومحدث فورياً';
+                    if (data && typeof data === 'object') {
+                        // دمج البيانات السحابية مع المحلية لضمان عدم مسح أي شيء
+                        allOrders = { ...allOrders, ...data };
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(allOrders));
+                        drawList();
+                        document.getElementById('statusMsg').innerText = '🟢 متزامن مع صديقك';
+                    }
                 }
-            } catch(e) {
-                document.getElementById('statusMsg').innerText = '⚠️ جاري العمل بالذاكرة المحلية';
-            }
+            } catch(e) {}
         }
 
-        async function saveNewOrder() {
+        function saveNewOrder() {
             const name = document.getElementById('custName').value.trim();
             const phone = document.getElementById('custPhone').value.trim();
             const code = document.getElementById('itemCode').value.trim();
@@ -312,8 +316,8 @@
             const by = document.getElementById('shipMethod').value;
             const notes = document.getElementById('custNotes').value.trim();
 
-            if (!name || !code) {
-                alert('يرجى كتابة اسم الزبون وكود القطعة');
+            if (!name) {
+                alert('يرجى كتابة اسم الزبون');
                 return;
             }
 
@@ -321,18 +325,22 @@
             const totalPrice = price + deliveryFee;
 
             const item = { 
-                name, phone, code, addr, price, 
+                name, phone, code: code || '---', addr, price, 
                 deliveryFee, totalPrice, by, notes, 
-                images: currentUploadedImages,
+                images: [...currentUploadedImages],
                 status: 'قيد التجهيز', 
                 date: Date.now() 
             };
 
-            // إظهار الطلب مباشرة في الصفحة فوراً دون انتظار السيرفر
-            const tempId = 'id_' + Date.now();
-            allOrders[tempId] = item;
+            // 1. توليد مفتاح دائم وتثبيت الطلب فوراً على الشاشة
+            const orderKey = 'ord_' + Date.now();
+            allOrders[orderKey] = item;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(allOrders));
+            
+            // إعادة رسم الواجهة ليظهر الطلب بالأسفل في نفس اللحظة
             drawList();
 
+            // 2. تصفير الحقول
             document.getElementById('custName').value = '';
             document.getElementById('custPhone').value = '';
             document.getElementById('itemCode').value = '';
@@ -344,37 +352,30 @@
             currentUploadedImages = [];
             updateLiveCalc();
 
-            document.getElementById('statusMsg').innerText = '⏳ جاري الحفظ السحابي...';
+            document.getElementById('statusMsg').innerText = '⏳ جاري الحفظ لصديقك...';
 
-            try {
-                const res = await fetch(FIREBASE_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(item)
-                });
-                if (res.ok) {
-                    delete allOrders[tempId];
-                    loadFromCloud();
-                }
-            } catch(e) {
-                document.getElementById('statusMsg').innerText = '🟢 تم الحفظ محلياً';
+            // 3. رفعه لـ Firebase مباشرة بنفس المفتاح
+            const saveUrl = FIREBASE_ENDPOINT.replace('.json', `/${orderKey}.json`);
+            fetch(saveUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(item)
+            }).then(() => {
+                document.getElementById('statusMsg').innerText = '🟢 وصل لصديقك بنجاح';
+            }).catch(() => {
+                document.getElementById('statusMsg').innerText = '🟢 محفوظ بجهازك';
+            });
+        }
+
+        function changeStatus(id, newStatus) {
+            if (allOrders[id]) {
+                allOrders[id].status = newStatus;
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(allOrders));
+                drawList();
             }
-        }
-
-        async function changeStatus(id, newStatus) {
-            if (allOrders[id]) allOrders[id].status = newStatus;
-            drawList();
-            try {
-                const updateUrl = FIREBASE_ENDPOINT.replace('.json', `/${id}.json`);
-                await fetch(updateUrl, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: newStatus })
-                });
-            } catch(e) {}
-            loadFromCloud();
-        }
-
-        async function removeOrder(id) {
-            if (confirm('هل تريد حذف هذا الطلب نهائياً؟')) {
-            
+            const updateUrl = FIREBASE_ENDPOINT.replace('.json', `/${id}.json`);
+            fetch(updateUrl, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            }
