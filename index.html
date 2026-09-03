@@ -10,7 +10,9 @@
 
         .header-bar { background: #1e293b; border: 1px solid #10b981; padding: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .status-badge { font-size: 13px; font-weight: bold; color: #34d399; }
-        .btn-reload { background: #0284c7; color: white; border: none; padding: 7px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .header-actions { display: flex; gap: 6px; }
+        .btn-reload { background: #0284c7; color: white; border: none; padding: 7px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-export { background: #10b981; color: white; border: none; padding: 7px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
 
         .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
         .stat-box { background: #1e293b; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #334155; }
@@ -45,6 +47,8 @@
 
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
         .cust-name { font-size: 15px; font-weight: bold; color: #fff; }
+        .header-tags { display: flex; gap: 4px; align-items: center; }
+        .order-date { font-size: 11px; color: #94a3b8; background: #0f172a; padding: 2px 6px; border-radius: 4px; }
         .item-code { background: #334155; padding: 2px 7px; border-radius: 6px; font-size: 12px; font-weight: bold; }
         .card-details { font-size: 13px; color: #cbd5e1; line-height: 1.7; margin-bottom: 8px; }
 
@@ -64,7 +68,6 @@
         .btn-status-back { background: #dc2626; color: #fff; }
         .btn-del { background: #7f1d1d; color: #fca5a5; margin-right: auto; }
 
-        /* نوافذ منبثقة */
         .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; padding: 12px; }
         .modal-content { background: #1e293b; border-radius: 12px; padding: 16px; width: 100%; max-width: 420px; border: 1px solid #475569; max-height: 90vh; overflow-y: auto; }
         .modal-title { font-size: 16px; font-weight: bold; margin-bottom: 12px; color: #38bdf8; text-align: center; }
@@ -76,7 +79,10 @@
 
     <div class="header-bar">
         <span class="status-badge" id="netStatus">🟢 متزامن مع صديقك</span>
-        <button class="btn-reload" onclick="fetchOrders()">🔄 سحب البيانات</button>
+        <div class="header-actions">
+            <button class="btn-export" onclick="exportToExcel()">📊 تصدير Excel</button>
+            <button class="btn-reload" onclick="fetchOrders()">🔄 سحب البيانات</button>
+        </div>
     </div>
 
     <div class="stats">
@@ -95,7 +101,7 @@
     </div>
 
     <!-- خانة البحث السريع -->
-    <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث بالاسم، رقم الهاتف، أو كود القطعة..." oninput="handleSearch()">
+    <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث بالاسم، الهاتف، الكود، أو التاريخ..." oninput="handleSearch()">
 
     <div class="box">
         <h3 style="margin-bottom: 10px; font-size: 15px;">إضافة طلب جديد 📦</h3>
@@ -200,6 +206,18 @@
                 `<strong style="color:#38bdf8;">السعر بعد التوصيل: ${total.toLocaleString()} د.ع</strong>`;
         }
 
+        function formatDateTime(timestamp) {
+            const d = new Date(timestamp || Date.now());
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            let hours = d.getHours();
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'م' : 'ص';
+            hours = hours % 12 || 12;
+            return `${year}/${month}/${day} - ${hours}:${minutes} ${ampm}`;
+        }
+
         function processImages(e) {
             const files = Array.from(e.target.files);
             files.forEach(file => {
@@ -269,7 +287,8 @@
                     const phone = (o.phone || "").toLowerCase();
                     const code = (o.code || "").toLowerCase();
                     const addr = (o.addr || "").toLowerCase();
-                    return name.includes(searchQuery) || phone.includes(searchQuery) || code.includes(searchQuery) || addr.includes(searchQuery);
+                    const dateStr = (o.formattedDate || "").toLowerCase();
+                    return name.includes(searchQuery) || phone.includes(searchQuery) || code.includes(searchQuery) || addr.includes(searchQuery) || dateStr.includes(searchQuery);
                 }
                 return true;
             });
@@ -293,11 +312,16 @@
                         `</div>`;
                 }
 
+                const displayDate = o.formattedDate || formatDateTime(o.timestamp);
+
                 list.innerHTML += `
                     <div class="card ${statusClass}">
                         <div class="card-header">
                             <span class="cust-name">${o.name}</span>
-                            <span class="item-code">كود: ${o.code || '---'}</span>
+                            <div class="header-tags">
+                                <span class="order-date">🕒 ${displayDate}</span>
+                                <span class="item-code">كود: ${o.code || '---'}</span>
+                            </div>
                         </div>
                         <div class="card-details">
                             📍 العنوان: ${o.addr || 'غير محدد'}<br>
@@ -331,213 +355,4 @@
             const code = document.getElementById("cCode").value.trim();
             const addr = document.getElementById("cAddr").value.trim();
             const price = parseFloat(document.getElementById("cPrice").value) || 0;
-            const method = document.getElementById("cMethod").value;
-            const notes = document.getElementById("cNotes").value.trim();
-
-            if (!name) {
-                alert("يرجى كتابة اسم الزبون");
-                return;
-            }
-
-            const fee = calcFee(method);
-            const total = price + fee;
-
-            const order = {
-                id: "id_" + Date.now(),
-                name, phone, code, addr, price, fee, total, method, notes,
-                images: [...activeImages],
-                status: "قيد التجهيز"
-            };
-
-            orders.unshift(order);
-            localStorage.setItem(LOCAL_KEY, JSON.stringify(orders));
-            renderUI();
-
-            document.getElementById("cName").value = "";
-            document.getElementById("cPhone").value = "";
-            document.getElementById("cCode").value = "";
-            document.getElementById("cAddr").value = "";
-            document.getElementById("cPrice").value = "";
-            document.getElementById("cNotes").value = "";
-            document.getElementById("fileInput").value = "";
-            document.getElementById("previewArea").innerHTML = "";
-            activeImages = [];
-            recalc();
-
-            pushCloud();
-        }
-
-        function openEditModal(id) {
-            const o = orders.find(x => x.id === id);
-            if (!o) return;
-            document.getElementById("editId").value = o.id;
-            document.getElementById("editName").value = o.name || "";
-            document.getElementById("editPhone").value = o.phone || "";
-            document.getElementById("editCode").value = o.code || "";
-            document.getElementById("editAddr").value = o.addr || "";
-            document.getElementById("editPrice").value = o.price || 0;
-            document.getElementById("editMethod").value = o.method || "داخل خانقين";
-            document.getElementById("editNotes").value = o.notes || "";
-            document.getElementById("editModal").style.display = "flex";
-        }
-
-        function closeEditModal() {
-            document.getElementById("editModal").style.display = "none";
-        }
-
-        function saveEditedOrder() {
-            const id = document.getElementById("editId").value;
-            const name = document.getElementById("editName").value.trim();
-            const phone = document.getElementById("editPhone").value.trim();
-            const code = document.getElementById("editCode").value.trim();
-            const addr = document.getElementById("editAddr").value.trim();
-            const price = parseFloat(document.getElementById("editPrice").value) || 0;
-            const method = document.getElementById("editMethod").value;
-            const notes = document.getElementById("editNotes").value.trim();
-
-            if (!name) {
-                alert("يرجى كتابة اسم الزبون");
-                return;
-            }
-
-            const fee = calcFee(method);
-            const total = price + fee;
-
-            orders = orders.map(o => {
-                if (o.id === id) {
-                    return { ...o, name, phone, code, addr, price, fee, total, method, notes };
-                }
-                return o;
-            });
-
-            localStorage.setItem(LOCAL_KEY, JSON.stringify(orders));
-            renderUI();
-            closeEditModal();
-            pushCloud();
-        }
-
-        function pushCloud() {
-            document.getElementById("netStatus").innerText = "⏳ جاري التحديث...";
-            fetch(FIREBASE_URL, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(orders)
-            }).then(() => {
-                document.getElementById("netStatus").innerText = "🟢 متزامن مع صديقك";
-            }).catch(() => {
-                document.getElementById("netStatus").innerText = "🟢 محفوظ على الهاتف";
-            });
-        }
-
-        function fetchOrders() {
-            fetch(FIREBASE_URL)
-                .then(res => res.json())
-                .then(data => {
-                    if (Array.isArray(data)) {
-                        orders = data;
-                        localStorage.setItem(LOCAL_KEY, JSON.stringify(orders));
-                        renderUI();
-                        document.getElementById("netStatus").innerText = "🟢 متزامن مع صديقك";
-                    }
-                }).catch(() => {});
-        }
-
-        function updateStatus(id, newStatus) {
-            orders = orders.map(o => o.id === id ? { ...o, status: newStatus } : o);
-            localStorage.setItem(LOCAL_KEY, JSON.stringify(orders));
-            renderUI();
-            pushCloud();
-        }
-
-        function deleteOrder(id) {
-            if (confirm("هل تريد حذف هذا الطلب؟")) {
-                orders = orders.filter(o => o.id !== id);
-                localStorage.setItem(LOCAL_KEY, JSON.stringify(orders));
-                renderUI();
-                pushCloud();
-            }
-        }
-
-        function filterTab(tab, btn) {
-            selectedTab = tab;
-            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            renderUI();
-        }
-
-        function b64toBlobFile(b64Data, filename) {
-            const parts = b64Data.split(';base64,');
-            const contentType = parts[0].split(':')[1];
-            const raw = window.atob(parts[1]);
-            const rawLength = raw.length;
-            const uInt8Array = new Uint8Array(rawLength);
-            for (let i = 0; i < rawLength; ++i) {
-                uInt8Array[i] = raw.charCodeAt(i);
-            }
-            return new File([uInt8Array], filename, { type: contentType });
-        }
-
-        async function executeShare(msg, images, title) {
-            if (images && images.length > 0 && navigator.share) {
-                try {
-                    const files = images.map((img, i) => b64toBlobFile(img, `item_${i + 1}.jpg`));
-                    if (navigator.canShare && navigator.canShare({ files: files })) {
-                        await navigator.share({ files: files, title: title, text: msg });
-                        return;
-                    }
-                } catch(err) {}
-            }
-            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
-        }
-
-        // 1. وصل مخصص للزبون (ترحيبي وتفصيلي)
-        function shareToCustomer(id) {
-            const o = orders.find(x => x.id === id);
-            if (!o) return;
-
-            let msg = `مرحباً بك زبوننا العزيز 🌸\n` +
-                      `تم تأكيد طلبك بنجاح، إليك تفاصيل الوصل:\n` +
-                      `━━━━━━━━━━━━━━\n` +
-                      `👤 *الاسم:* ${o.name}\n` +
-                      `🏷️ *كود القطعة:* ${o.code || '---'}\n` +
-                      `📍 *عنوان التوصيل:* ${o.addr || 'غير محدد'}\n` +
-                      `💵 *سعر الطلب:* ${Number(o.price).toLocaleString()} دينار\n` +
-                      `🚚 *أجور التوصيل:* ${Number(o.fee).toLocaleString()} دينار\n` +
-                      `💰 *المبلغ الصافي المطلوب عند الاستلام:* ${Number(o.total).toLocaleString()} دينار\n`;
-            if (o.notes) msg += `📝 *ملاحظة:* ${o.notes}\n`;
-            msg += `━━━━━━━━━━━━━━\nنشكرك على ثقتك بنا ونتمنى لك يوماً سعيداً ❤️`;
-
-            executeShare(msg, o.images, 'وصل طلبك');
-        }
-
-        // 2. وصل مخصص للمندوب (مباشر ومختصر للتسليم السريع)
-        function shareToDriver(id) {
-            const o = orders.find(x => x.id === id);
-            if (!o) return;
-
-            let msg = `🚚 *مهمة توصيل جديدة* 📦\n` +
-                      `━━━━━━━━━━━━━━\n` +
-                      `👤 *الزبون:* ${o.name}\n` +
-                      `📞 *رقم الهاتف:* ${o.phone || 'غير مسجل'}\n` +
-                      `📍 *العنوان:* ${o.addr || 'غير محدد'}\n` +
-                      `🏷️ *كود القطعة:* ${o.code || '---'}\n` +
-                      `💰 *المبلغ المطلوب قبضه من الزبون:* ${Number(o.total).toLocaleString()} دينار\n` +
-                      `🚚 *نوع الشحنة:* ${o.method}\n`;
-            if (o.notes) msg += `⚠️ *ملاحظات التوصيل:* ${o.notes}\n`;
-            msg += `━━━━━━━━━━━━━━\nيرجى التواصل مع الزبون قبل التوجه إليه.`;
-
-            executeShare(msg, o.images, 'مهمة توصيل');
-        }
-
-        function viewImg(src) {
-            document.getElementById("modalViewer").src = src;
-            document.getElementById("modal").style.display = "flex";
-        }
-
-        recalc();
-        renderUI();
-        fetchOrders();
-        setInterval(fetchOrders, 4000);
-    </script>
-</body>
-</html>
+            const m
