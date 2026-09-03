@@ -3,382 +3,390 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة الطلبات</title>
+    <title>نظام إدارة الطلبات</title>
     <style>
         * { box-sizing: border-box; font-family: Tahoma, Arial, sans-serif; margin: 0; padding: 0; }
         body { background: #0f172a; padding: 12px; color: #f8fafc; direction: rtl; }
-        
-        .sync-box { background: #1e293b; border: 1px solid #10b981; padding: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .sync-text { font-size: 12px; font-weight: bold; color: #34d399; }
-        .btn-sync { background: #0284c7; color: white; border: none; padding: 7px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
 
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-        .stat-card { background: #1e293b; padding: 12px; border-radius: 10px; text-align: center; border: 1px solid #334155; }
-        .stat-card.full { grid-column: span 2; background: #0284c7; color: white; border: none; }
-        .stat-num { font-size: 16px; font-weight: bold; margin-top: 4px; }
-        .stat-label { font-size: 11px; opacity: 0.9; }
+        .header-bar { background: #1e293b; border: 1px solid #10b981; padding: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .status-badge { font-size: 13px; font-weight: bold; color: #34d399; }
+        .btn-reload { background: #0284c7; color: white; border: none; padding: 7px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
 
-        .box { background: #1e293b; border-radius: 12px; padding: 14px; border: 1px solid #334155; margin-bottom: 12px; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .stat-box { background: #1e293b; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #334155; }
+        .stat-box.full { grid-column: span 2; background: #0284c7; border: none; }
+        .stat-title { font-size: 11px; opacity: 0.9; }
+        .stat-val { font-size: 15px; font-weight: bold; margin-top: 3px; }
+
+        .box { background: #1e293b; border-radius: 10px; padding: 14px; border: 1px solid #334155; margin-bottom: 12px; }
         input, select, textarea { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #475569; border-radius: 8px; font-size: 14px; background: #0f172a; color: #fff; }
-        textarea { resize: vertical; height: 50px; }
-        
-        .calc-preview { background: #0f172a; border: 1px solid #38bdf8; padding: 10px; border-radius: 8px; font-size: 13px; color: #38bdf8; margin-bottom: 8px; text-align: center; font-weight: bold; line-height: 1.6; }
+        textarea { height: 50px; resize: vertical; }
 
-        .file-label { display: block; background: #334155; padding: 10px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px dashed #38bdf8; margin-bottom: 8px; color: #38bdf8; }
-        .preview-list { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; padding-bottom: 4px; }
-        .preview-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #38bdf8; flex-shrink: 0; }
+        .calc-box { background: #0f172a; border: 1px solid #38bdf8; padding: 10px; border-radius: 8px; font-size: 13px; color: #38bdf8; text-align: center; font-weight: bold; margin-bottom: 8px; line-height: 1.6; }
 
-        .btn-main { background: #2563eb; color: #fff; border: 0; width: 100%; padding: 13px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
-        
+        .upload-btn { display: block; background: #334155; padding: 9px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px dashed #38bdf8; margin-bottom: 8px; color: #38bdf8; }
+        .previews { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; }
+        .thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #38bdf8; flex-shrink: 0; }
+
+        .btn-add { background: #2563eb; color: #fff; border: 0; width: 100%; padding: 13px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
+
         .tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 10px; }
-        .tab { background: #334155; color: #cbd5e1; border: 0; padding: 8px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; white-space: nowrap; cursor: pointer; }
-        .tab.active { background: #38bdf8; color: #0f172a; }
+        .tab-btn { background: #334155; color: #cbd5e1; border: 0; padding: 7px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+        .tab-btn.active { background: #38bdf8; color: #0f172a; }
 
         .card { background: #1e293b; border-radius: 10px; padding: 12px; margin-bottom: 10px; border: 1px solid #334155; }
         .card.pending { border-right: 5px solid #f59e0b; }
         .card.shipping { border-right: 5px solid #38bdf8; }
-        .card.done { border-right: 5px solid #10b981; }
+        .card.delivered { border-right: 5px solid #10b981; }
         .card.returned { border-right: 5px solid #ef4444; }
-        
-        .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-        .title { font-size: 15px; font-weight: bold; color: #fff; }
-        .code { background: #334155; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; }
-        .info { font-size: 13px; color: #cbd5e1; line-height: 1.7; margin-bottom: 8px; }
-        
-        .card-images { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; padding-bottom: 4px; }
-        .card-img { width: 75px; height: 75px; object-fit: cover; background: #0f172a; border-radius: 8px; border: 1px solid #475569; cursor: pointer; flex-shrink: 0; }
 
-        .notes-box { background: #334155; border: 1px dashed #f59e0b; padding: 6px; border-radius: 6px; font-size: 12px; color: #fde047; margin-bottom: 8px; }
-        
-        .btns { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
-        .btn-act { border: 0; padding: 6px 9px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
-        .call { background: #22c55e; color: #fff; text-decoration: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; }
-        .share { background: #25d366; color: #fff; border: 0; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
-        .del { background: #7f1d1d; color: #fca5a5; margin-right: auto; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .cust-name { font-size: 15px; font-weight: bold; color: #fff; }
+        .item-code { background: #334155; padding: 2px 7px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+        .card-details { font-size: 13px; color: #cbd5e1; line-height: 1.7; margin-bottom: 8px; }
 
-        .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); justify-content: center; align-items: center; }
-        .modal img { max-width: 95%; max-height: 90%; border-radius: 8px; }
+        .img-gallery { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; }
+        .img-gallery img { width: 75px; height: 75px; object-fit: cover; border-radius: 6px; border: 1px solid #475569; cursor: pointer; flex-shrink: 0; }
+
+        .note-tag { background: #334155; border: 1px dashed #f59e0b; padding: 6px; border-radius: 6px; font-size: 12px; color: #fde047; margin-bottom: 8px; }
+
+        .action-btns { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+        .action-btns button, .action-btns a { border: 0; padding: 6px 9px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; text-decoration: none; }
+        .btn-call { background: #22c55e; color: #fff; }
+        .btn-wa { background: #25d366; color: #fff; }
+        .btn-status-ship { background: #0284c7; color: #fff; }
+        .btn-status-done { background: #059669; color: #fff; }
+        .btn-status-back { background: #dc2626; color: #fff; }
+        .btn-del { background: #7f1d1d; color: #fca5a5; margin-right: auto; }
+
+        .img-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; }
+        .img-modal img { max-width: 95%; max-height: 90%; border-radius: 8px; }
     </style>
 </head>
 <body>
 
-    <div class="sync-box">
-        <span class="sync-text" id="statusMsg">🟢 النظام نشط</span>
-        <button class="btn-sync" onclick="syncWithFirebase()">🔄 تحديث من السحابة</button>
+    <div class="header-bar">
+        <span class="status-badge" id="netStatus">🟢 النظام متصل وجاهز</span>
+        <button class="btn-reload" onclick="fetchOrders()">🔄 سحب البيانات</button>
     </div>
 
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-label">المبالغ الواصلة</div>
-            <div class="stat-num" style="color:#34d399;" id="statDelivered">0 د.ع</div>
+    <div class="stats">
+        <div class="stat-box">
+            <div class="stat-title">المبالغ الواصلة</div>
+            <div class="stat-val" style="color:#34d399;" id="boxDelivered">0 د.ع</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-label">مبالغ في الطريق</div>
-            <div class="stat-num" style="color:#38bdf8;" id="statShipping">0 د.ع</div>
+        <div class="stat-box">
+            <div class="stat-title">مبالغ في الطريق</div>
+            <div class="stat-val" style="color:#38bdf8;" id="boxShipping">0 د.ع</div>
         </div>
-        <div class="stat-card full">
-            <div class="stat-label">المجموع الكلي (بعد التوصيل)</div>
-            <div class="stat-num" id="statTotal">0 د.ع</div>
+        <div class="stat-box full">
+            <div class="stat-title">المجموع الكلي مع التوصيل</div>
+            <div class="stat-val" id="boxTotal">0 د.ع</div>
         </div>
     </div>
 
     <div class="box">
         <h3 style="margin-bottom: 10px; font-size: 15px;">إضافة طلب جديد 📦</h3>
-        <input type="text" id="custName" placeholder="اسم الزبون (مطلوب)">
-        <input type="tel" id="custPhone" placeholder="رقم الهاتف">
-        <input type="text" id="itemCode" placeholder="رقم / كود القطعة">
-        <input type="text" id="custAddr" placeholder="العنوان بالتفصيل">
-        <input type="number" id="itemPrice" placeholder="السعر قبل التوصيل (دينار)" oninput="updateLiveCalc()">
+        <input type="text" id="cName" placeholder="اسم الزبون (مطلوب)">
+        <input type="tel" id="cPhone" placeholder="رقم الهاتف">
+        <input type="text" id="cCode" placeholder="كود القطعة">
+        <input type="text" id="cAddr" placeholder="العنوان">
+        <input type="number" id="cPrice" placeholder="السعر قبل التوصيل (دينار)" oninput="recalc()">
         
-        <select id="shipMethod" onchange="updateLiveCalc()">
+        <select id="cMethod" onchange="recalc()">
             <option value="داخل خانقين">توصيل: داخل خانقين (+2,000 د.ع)</option>
             <option value="المحافظات">توصيل: خارج خانقين / المحافظات (+5,000 د.ع)</option>
-            <option value="بدون توصيل">بدون توصيل (استلام يدوي 0 د.ع)</option>
+            <option value="بدون توصيل">بدون توصيل (استلام مباشر 0 د.ع)</option>
         </select>
 
-        <div id="liveCalcBox" class="calc-preview">
-            السعر قبل التوصيل: 0 د.ع | أجور التوصيل: 2,000 د.ع<br>
+        <div id="calcView" class="calc-box">
+            السعر قبل التوصيل: 0 د.ع | التوصيل: 2,000 د.ع<br>
             <strong>السعر بعد التوصيل: 2,000 د.ع</strong>
         </div>
 
-        <textarea id="custNotes" placeholder="ملاحظات إضافية (اختياري)"></textarea>
+        <textarea id="cNotes" placeholder="ملاحظات إضافية (اختياري)"></textarea>
 
-        <label class="file-label" for="itemImages">📷 اختيار صور أو سكرين شوت (اختياري)</label>
-        <input type="file" id="itemImages" accept="image/*" multiple style="display:none;" onchange="handleMultipleImages(event)">
-        <div id="previewContainer" class="preview-list"></div>
+        <label class="upload-btn" for="fileInput">📷 اختيار صور أو سكرين شوت</label>
+        <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="processImages(event)">
+        <div id="previewArea" class="previews"></div>
 
-        <button type="button" class="btn-main" onclick="saveNewOrder()">تثبيت الطلب</button>
+        <button type="button" class="btn-add" onclick="createOrder()">تثبيت الطلب</button>
     </div>
 
     <div class="tabs">
-        <button class="tab active" onclick="switchTab('all', this)">الكل (<span id="countTotal">0</span>)</button>
-        <button class="tab" onclick="switchTab('داخل خانقين', this)">داخل خانقين</button>
-        <button class="tab" onclick="switchTab('المحافظات', this)">خارج خانقين</button>
-        <button class="tab" onclick="switchTab('بدون توصيل', this)">بدون توصيل</button>
-        <button class="tab" onclick="switchTab('بالطريق', this)">🚚 بالطريق</button>
-        <button class="tab" onclick="switchTab('تم التسليم', this)">✅ واصل</button>
-        <button class="tab" onclick="switchTab('راجع', this)">❌ راجع</button>
+        <button class="tab-btn active" onclick="filterTab('all', this)">الكل (<span id="totalBadge">0</span>)</button>
+        <button class="tab-btn" onclick="filterTab('داخل خانقين', this)">داخل خانقين</button>
+        <button class="tab-btn" onclick="filterTab('المحافظات', this)">خارج خانقين</button>
+        <button class="tab-btn" onclick="filterTab('بدون توصيل', this)">بدون توصيل</button>
+        <button class="tab-btn" onclick="filterTab('بالطريق', this)">🚚 بالطريق</button>
+        <button class="tab-btn" onclick="filterTab('واصل', this)">✅ واصل</button>
+        <button class="tab-btn" onclick="filterTab('راجع', this)">❌ راجع</button>
     </div>
 
-    <div id="ordersContainer"></div>
+    <div id="ordersList"></div>
 
-    <div id="imgModal" class="modal" onclick="closeModal()">
-        <img id="modalImg" src="">
+    <div id="modal" class="img-modal" onclick="this.style.display='none'">
+        <img id="modalViewer" src="">
     </div>
 
     <script>
-        const FIREBASE_ENDPOINT = "https://orders-99674-default-rtdb.firebaseio.com/orders.json";
-        const STORAGE_KEY = "local_orders_data_store";
+        const FIREBASE_URL = "https://orders-99674-default-rtdb.firebaseio.com/orders.json";
+        const LOCAL_KEY = "simple_orders_storage_v1";
 
-        // استخدام مصفوفة لسهولة وسرعة الإضافة والعرض المباشر
-        let ordersArray = [];
-        let activeTab = 'all';
-        let currentUploadedImages = [];
+        let orders = [];
+        let selectedTab = "all";
+        let activeImages = [];
 
-        // تحميل فوري من الذاكرة المحلية
+        // استرجاع البيانات المحفوظة محلياً عند الفتح
         try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            if (raw) {
-                ordersArray = JSON.parse(raw);
-            }
+            const saved = localStorage.getItem(LOCAL_KEY);
+            if (saved) orders = JSON.parse(saved);
         } catch(e) {}
 
-        function getDeliveryFee(method) {
-            if (!method) return 0;
-            if (method.includes('داخل خانقين')) return 2000;
-            if (method.includes('المحافظات')) return 5000;
+        function calcFee(method) {
+            if (method === "داخل خانقين") return 2000;
+            if (method === "المحافظات") return 5000;
             return 0;
         }
 
-        function updateLiveCalc() {
-            const price = parseFloat(document.getElementById('itemPrice').value) || 0;
-            const method = document.getElementById('shipMethod').value;
-            const fee = getDeliveryFee(method);
-            const total = price + fee;
-            document.getElementById('liveCalcBox').innerHTML = 
-                `السعر قبل التوصيل: ${price.toLocaleString()} د.ع | أجور التوصيل: ${fee.toLocaleString()} د.ع<br>` +
+        function recalc() {
+            const p = parseFloat(document.getElementById("cPrice").value) || 0;
+            const m = document.getElementById("cMethod").value;
+            const f = calcFee(m);
+            const total = p + f;
+            document.getElementById("calcView").innerHTML = 
+                `السعر قبل التوصيل: ${p.toLocaleString()} د.ع | التوصيل: ${f.toLocaleString()} د.ع<br>` +
                 `<strong style="color:#38bdf8;">السعر بعد التوصيل: ${total.toLocaleString()} د.ع</strong>`;
         }
 
-        function handleMultipleImages(event) {
-            const files = Array.from(event.target.files);
-            if (!files.length) return;
-
+        function processImages(e) {
+            const files = Array.from(e.target.files);
             files.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
+                const r = new FileReader();
+                r.onload = function(evt) {
                     const img = new Image();
                     img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-                        const maxDim = 300;
-                        if (width > height && width > maxDim) {
-                            height *= maxDim / width;
-                            width = maxDim;
-                        } else if (height > maxDim) {
-                            width *= maxDim / height;
-                            height = maxDim;
-                        }
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        const base64 = canvas.toDataURL('image/jpeg', 0.4);
-                        currentUploadedImages.push(base64);
-                        renderPreviews();
+                        const canvas = document.createElement("canvas");
+                        let w = img.width, h = img.height;
+                        const max = 300;
+                        if (w > h && w > max) { h *= max / w; w = max; }
+                        else if (h > max) { w *= max / h; h = max; }
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+                        const b64 = canvas.toDataURL("image/jpeg", 0.4);
+                        activeImages.push(b64);
+                        renderThumbs();
                     };
-                    img.src = e.target.result;
+                    img.src = evt.target.result;
                 };
-                reader.readAsDataURL(file);
+                r.readAsDataURL(file);
             });
         }
 
-        function renderPreviews() {
-            const container = document.getElementById('previewContainer');
-            container.innerHTML = '';
-            currentUploadedImages.forEach(src => {
-                container.innerHTML += `<img src="${src}" class="preview-thumb">`;
+        function renderThumbs() {
+            const el = document.getElementById("previewArea");
+            el.innerHTML = "";
+            activeImages.forEach(src => {
+                el.innerHTML += `<img src="${src}" class="thumb">`;
             });
         }
 
-        function updateTotals() {
-            let done = 0, road = 0, total = 0;
-            ordersArray.forEach(o => {
-                const itemP = Number(o.price) || 0;
-                const delP = (o.deliveryFee !== undefined) ? Number(o.deliveryFee) : getDeliveryFee(o.by);
-                const fullP = o.totalPrice ? Number(o.totalPrice) : (itemP + delP);
-
-                if (o.status === 'تم التسليم') done += fullP;
-                if (o.status === 'بالطريق' || o.status === 'قيد التجهيز') road += fullP;
-                if (o.status !== 'راجع') total += fullP;
+        function refreshStats() {
+            let delivered = 0, shipping = 0, total = 0;
+            orders.forEach(o => {
+                const p = Number(o.total) || 0;
+                if (o.status === "واصل") delivered += p;
+                if (o.status === "بالطريق" || o.status === "قيد التجهيز") shipping += p;
+                if (o.status !== "راجع") total += p;
             });
-            document.getElementById('statDelivered').innerText = done.toLocaleString() + ' د.ع';
-            document.getElementById('statShipping').innerText = road.toLocaleString() + ' د.ع';
-            document.getElementById('statTotal').innerText = total.toLocaleString() + ' د.ع';
+            document.getElementById("boxDelivered").innerText = delivered.toLocaleString() + " د.ع";
+            document.getElementById("boxShipping").innerText = shipping.toLocaleString() + " د.ع";
+            document.getElementById("boxTotal").innerText = total.toLocaleString() + " د.ع";
         }
 
-        function drawList() {
-            const container = document.getElementById('ordersContainer');
-            container.innerHTML = '';
-            document.getElementById('countTotal').innerText = ordersArray.length;
+        function renderUI() {
+            const list = document.getElementById("ordersList");
+            list.innerHTML = "";
+            document.getElementById("totalBadge").innerText = orders.length;
 
-            if (ordersArray.length === 0) {
-                container.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">لا توجد طلبات مسجلة حالياً</p>';
-                updateTotals();
+            if (orders.length === 0) {
+                list.innerHTML = `<p style="text-align:center; color:#64748b; padding:25px;">لا توجد طلبات مسجلة</p>`;
+                refreshStats();
                 return;
             }
 
-            let filtered = ordersArray.filter(o => {
-                if (activeTab === 'all') return true;
-                if (activeTab === 'داخل خانقين') return o.by && o.by.includes('داخل خانقين');
-                if (activeTab === 'المحافظات') return o.by && o.by.includes('المحافظات');
-                if (activeTab === 'بدون توصيل') return o.by && o.by.includes('بدون توصيل');
-                return o.status === activeTab;
+            let filtered = orders.filter(o => {
+                if (selectedTab === "all") return true;
+                if (selectedTab === "داخل خانقين") return o.method === "داخل خانقين";
+                if (selectedTab === "المحافظات") return o.method === "المحافظات";
+                if (selectedTab === "بدون توصيل") return o.method === "بدون توصيل";
+                return o.status === selectedTab;
             });
 
             filtered.forEach(o => {
-                let cls = 'pending';
-                if (o.status === 'بالطريق') cls = 'shipping';
-                if (o.status === 'تم التسليم') cls = 'done';
-                if (o.status === 'راجع') cls = 'returned';
+                let statusClass = "pending";
+                if (o.status === "بالطريق") statusClass = "shipping";
+                if (o.status === "واصل") statusClass = "delivered";
+                if (o.status === "راجع") statusClass = "returned";
 
-                const itemPrice = Number(o.price) || 0;
-                const deliveryFee = (o.deliveryFee !== undefined) ? Number(o.deliveryFee) : getDeliveryFee(o.by);
-                const totalPrice = o.totalPrice ? Number(o.totalPrice) : (itemPrice + deliveryFee);
-
-                let imgs = [];
-                if (Array.isArray(o.images)) imgs = o.images;
-                else if (o.img) imgs = [o.img];
-
-                let imagesHtml = '';
-                if (imgs.length > 0) {
-                    imagesHtml = `<div class="card-images">` + 
-                        imgs.map(imgSrc => `<img src="${imgSrc}" class="card-img" onclick="openModal('${imgSrc}')">`).join('') +
+                let imgsHtml = "";
+                if (o.images && o.images.length > 0) {
+                    imgsHtml = `<div class="img-gallery">` +
+                        o.images.map(img => `<img src="${img}" onclick="viewImg('${img}')">`).join("") +
                         `</div>`;
                 }
 
-                container.innerHTML += `
-                    <div class="card ${cls}">
-                        <div class="card-top">
-                            <span class="title">${o.name}</span>
-                            <span class="code">كود: ${o.code || '---'}</span>
+                list.innerHTML += `
+                    <div class="card ${statusClass}">
+                        <div class="card-header">
+                            <span class="cust-name">${o.name}</span>
+                            <span class="item-code">كود: ${o.code || '---'}</span>
                         </div>
-                        <div class="info">
-                            📍 ${o.addr || 'بدون عنوان'}<br>
-                            💵 السعر قبل التوصيل: <strong>${itemPrice.toLocaleString()} د.ع</strong><br>
-                            🚚 أجور التوصيل: <strong>${deliveryFee.toLocaleString()} د.ع</strong> (${o.by || 'بدون تحديد'})<br>
-                            💰 <span style="color:#38bdf8; font-weight:bold;">السعر بعد التوصيل: ${totalPrice.toLocaleString()} د.ع</span><br>
+                        <div class="card-details">
+                            📍 العنوان: ${o.addr || 'غير محدد'}<br>
+                            💵 السعر قبل التوصيل: <strong>${Number(o.price).toLocaleString()} د.ع</strong><br>
+                            🚚 أجور التوصيل: <strong>${Number(o.fee).toLocaleString()} د.ع</strong> (${o.method})<br>
+                            💰 <span style="color:#38bdf8; font-weight:bold;">السعر بعد التوصيل: ${Number(o.total).toLocaleString()} د.ع</span><br>
                             الحالة: <strong>${o.status}</strong>
                         </div>
-                        ${imagesHtml}
-                        ${o.notes ? `<div class="notes-box">📝 ${o.notes}</div>` : ''}
-                        <div class="btns">
-                            ${o.phone ? `<a href="tel:${o.phone}" class="call">📞 اتصال</a>` : ''}
-                            <button class="share" onclick="shareWithWhatsApp('${o.id}')">📤 مشاركة الوصل</button>
-                            <button class="btn-act" style="background:#0284c7; color:#fff;" onclick="changeStatus('${o.id}', 'بالطريق')">بالطريق</button>
-                            <button class="btn-act" style="background:#059669; color:#fff;" onclick="changeStatus('${o.id}', 'تم التسليم')">واصل</button>
-                            <button class="btn-act" style="background:#dc2626; color:#fff;" onclick="changeStatus('${o.id}', 'راجع')">راجع</button>
-                            <button class="btn-act del" onclick="removeOrder('${o.id}')">حذف</button>
+                        ${imgsHtml}
+                        ${o.notes ? `<div class="note-tag">📝 ${o.notes}</div>` : ''}
+                        <div class="action-btns">
+                            ${o.phone ? `<a href="tel:${o.phone}" class="btn-call">📞 اتصال</a>` : ''}
+                            <button class="btn-wa" onclick="sendWhatsApp('${o.id}')">📤 مشاركة الوصل</button>
+                            <button class="btn-status-ship" onclick="updateStatus('${o.id}', 'بالطريق')">بالطريق</button>
+                            <button class="btn-status-done" onclick="updateStatus('${o.id}', 'واصل')">واصل</button>
+                            <button class="btn-status-back" onclick="updateStatus('${o.id}', 'راجع')">راجع</button>
+                            <button class="btn-del" onclick="deleteOrder('${o.id}')">حذف</button>
                         </div>
                     </div>
                 `;
             });
 
-            updateTotals();
+            refreshStats();
         }
 
-        function saveNewOrder() {
-            const name = document.getElementById('custName').value.trim();
-            const phone = document.getElementById('custPhone').value.trim();
-            const code = document.getElementById('itemCode').value.trim();
-            const addr = document.getElementById('custAddr').value.trim();
-            const price = parseFloat(document.getElementById('itemPrice').value) || 0;
-            const by = document.getElementById('shipMethod').value;
-            const notes = document.getElementById('custNotes').value.trim();
+        function createOrder() {
+            const name = document.getElementById("cName").value.trim();
+            const phone = document.getElementById("cPhone").value.trim();
+            const code = document.getElementById("cCode").value.trim();
+            const addr = document.getElementById("cAddr").value.trim();
+            const price = parseFloat(document.getElementById("cPrice").value) || 0;
+            const method = document.getElementById("cMethod").value;
+            const notes = document.getElementById("cNotes").value.trim();
 
             if (!name) {
-                alert('يرجى كتابة اسم الزبون أولاً');
+                alert("يرجى كتابة اسم الزبون");
                 return;
             }
 
-            const deliveryFee = getDeliveryFee(by);
-            const totalPrice = price + deliveryFee;
+            const fee = calcFee(method);
+            const total = price + fee;
 
-            const newItem = { 
-                id: 'id_' + Date.now(),
-                name, phone, 
-                code: code || '---', 
-                addr, price, 
-                deliveryFee, totalPrice, by, notes, 
-                images: [...currentUploadedImages],
-                status: 'قيد التجهيز', 
-                date: Date.now() 
+            const order = {
+                id: "id_" + Date.now(),
+                name, phone, code, addr, price, fee, total, method, notes,
+                images: [...activeImages],
+                status: "قيد التجهيز"
             };
 
-            // 1. الإضافة الفورية في أعلى القائمة
-            ordersArray.unshift(newItem);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(ordersArray));
-            drawList();
+            // الإضافة المباشرة في أول القائمة
+            orders.unshift(order);
+            localStorage.setItem(LOCAL_KEY, JSON.stringify(orders));
+            renderUI();
 
-            // 2. تفريغ الحقول
-            document.getElementById('custName').value = '';
-            document.getElementById('custPhone').value = '';
-            document.getElementById('itemCode').value = '';
-            document.getElementById('custAddr').value = '';
-            document.getElementById('itemPrice').value = '';
-            document.getElementById('custNotes').value = '';
-            document.getElementById('itemImages').value = '';
-            document.getElementById('previewContainer').innerHTML = '';
-            currentUploadedImages = [];
-            updateLiveCalc();
+            // تفريغ الحقول
+            document.getElementById("cName").value = "";
+            document.getElementById("cPhone").value = "";
+            document.getElementById("cCode").value = "";
+            document.getElementById("cAddr").value = "";
+            document.getElementById("cPrice").value = "";
+            document.getElementById("cNotes").value = "";
+            document.getElementById("fileInput").value = "";
+            document.getElementById("previewArea").innerHTML = "";
+            activeImages = [];
+            recalc();
 
-            document.getElementById('statusMsg').innerText = '⏳ جاري الحفظ لصديقك...';
+            // الحفظ السحابي في الخلفية
+            pushCloud();
+        }
 
-            // 3. الحفظ السحابي
-            fetch(FIREBASE_ENDPOINT, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(ordersArray)
+        function pushCloud() {
+            document.getElementById("netStatus").innerText = "⏳ جاري التحديث...";
+            fetch(FIREBASE_URL, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(orders)
             }).then(() => {
-                document.getElementById('statusMsg').innerText = '🟢 تم الحفظ والمزامنة بنجاح';
+                document.getElementById("netStatus").innerText = "🟢 متزامن مع صديقك";
             }).catch(() => {
-                document.getElementById('statusMsg').innerText = '🟢 محفوظ على هاتفك';
+                document.getElementById("netStatus").innerText = "🟢 محفوظ على الهاتف";
             });
         }
 
-        async function syncWithFirebase() {
-            try {
-                const res = await fetch(FIREBASE_ENDPOINT);
-                if (res.ok) {
-                    const data = await res.json();
+        function fetchOrders() {
+            fetch(FIREBASE_URL)
+                .then(res => res.json())
+                .then(data => {
                     if (Array.isArray(data)) {
-                        ordersArray = data;
-                        localStorage.setItem(STORAGE_KEY, JSON.stringify(ordersArray));
-                        drawList();
-                        document.getElementById('statusMsg').innerText = '🟢 متزامن مع صديقك';
+                        orders = data;
+                        localStorage.setItem(LOCAL_KEY, JSON.stringify(orders));
+                        renderUI();
+                        document.getElementById("netStatus").innerText = "🟢 متزامن مع صديقك";
                     }
-                }
-            } catch(e) {}
+                }).catch(() => {});
         }
 
-        function changeStatus(id, newStatus) {
-            ordersArray = ordersArray.map(o => o.id === id ? { ...o, status: newStatus } : o);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(ordersArray));
-            drawList();
-            fetch(FIREBASE_ENDPOINT, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(ordersArray)
-            }).catch(() => {});
+        function updateStatus(id, newStatus) {
+            orders = orders.map(o => o.id === id ? { ...o, status: newStatus } : o);
+            localStorage.setItem(LOCAL_KEY, JSON.stringify(orders));
+            renderUI();
+            pushCloud();
         }
 
-        function removeOrder(id) {
-            if (confirm('هل تريد بالتأكيد حذف هذا الطلب؟')) {
-                ordersArray = ordersArray.filter(o => o.id !== id);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(ordersArray));
-                drawList();
-                fetch(FIREBASE_ENDPOINT, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-            
+        function deleteOrder(id) {
+            if (confirm("هل تريد حذف هذا الطلب؟")) {
+                orders = orders.filter(o => o.id !== id);
+                localStorage.setItem(LOCAL_KEY, JSON.stringify(orders));
+                renderUI();
+                pushCloud();
+            }
+        }
+
+        function filterTab(tab, btn) {
+            selectedTab = tab;
+            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            renderUI();
+        }
+
+        function sendWhatsApp(id) {
+            const o = orders.find(x => x.id === id);
+            if (!o) return;
+
+            let msg = `📄 *وصل تفاصيل الطلب* 📦\n` +
+                      `━━━━━━━━━━━━━━\n` +
+                      `👤 *الاسم:* ${o.name}\n` +
+                      `📞 *الهاتف:* ${o.phone || 'غير مسجل'}\n` +
+                      `🏷️ *كود القطعة:* ${o.code || '---'}\n` +
+                      `📍 *العنوان:* ${o.addr || 'غير محدد'}\n` +
+                      `💵 *السعر قبل التوصيل:* ${Number(o.price).toLocaleString()} دينار\n` +
+                      `🚚 *أجور التوصيل:* ${Number(o.fee).toLocaleString()} دينار (${o.method})\n` +
+                      `💰 *السعر بعد التوصيل (المجموع):* ${Number(o.total).toLocaleString()} دينار\n`;
+            if (o.notes) msg += `📝 *ملاحظات:* ${o.notes}\n`;
+
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function viewImg(src) {
+            document.getElementById("modalViewer").src = src;
+            document.getElementById("modal").style.display = "flex";
+        }
+
+        recalc();
+        renderUI();
+        fetchOrders();
+        setInterval(fetchOrders, 4000);
+    </script>
+</body>
+</html>
