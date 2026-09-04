@@ -85,17 +85,18 @@
         </div>
     </div>
 
+    <!-- الصناديق المالية بحساب سعر القطع الصافي فقط دون التوصيل -->
     <div class="stats">
         <div class="stat-box">
-            <div class="stat-title">المبالغ الواصلة</div>
+            <div class="stat-title">المبالغ الواصلة (قطع فقط)</div>
             <div class="stat-val" style="color:#34d399;" id="boxDelivered">0 د.ع</div>
         </div>
         <div class="stat-box">
-            <div class="stat-title">مبالغ في الطريق</div>
+            <div class="stat-title">مبالغ في الطريق (قطع فقط)</div>
             <div class="stat-val" style="color:#38bdf8;" id="boxShipping">0 د.ع</div>
         </div>
         <div class="stat-box full">
-            <div class="stat-title">المجموع الكلي مع التوصيل</div>
+            <div class="stat-title">المجموع الكلي (سعر القطع فقط بدون توصيل)</div>
             <div class="stat-val" id="boxTotal">0 د.ع</div>
         </div>
     </div>
@@ -142,7 +143,6 @@
 
     <div id="ordersList"></div>
 
-    <!-- نافذة تعديل الطلب -->
     <div id="editModal" class="modal">
         <div class="modal-content">
             <div class="modal-title">✏️ تعديل بيانات الطلب</div>
@@ -183,7 +183,6 @@
         let searchQuery = "";
         let activeImages = [];
 
-        // قراءة آمنة لمنع أي خطأ
         try {
             const saved = localStorage.getItem(LOCAL_KEY);
             if (saved) orders = JSON.parse(saved);
@@ -195,7 +194,6 @@
             try {
                 localStorage.setItem(LOCAL_KEY, JSON.stringify(orders));
             } catch(e) {
-                // إذا امتلأت ذاكرة المتصفح بسبب صور قديمة، ننظفها ونحفظ النصوص فقط لضمان استمرار العمل
                 try {
                     const lightweight = orders.map(o => ({ ...o, images: [] }));
                     localStorage.setItem(LOCAL_KEY, JSON.stringify(lightweight));
@@ -240,7 +238,7 @@
                     img.onload = function() {
                         const canvas = document.createElement("canvas");
                         let w = img.width, h = img.height;
-                        const max = 250; // تصغير الحجم جداً لسرعة فائقة ومنع امتلاء الذاكرة
+                        const max = 250;
                         if (w > h && w > max) { h *= max / w; w = max; }
                         else if (h > max) { w *= max / h; h = max; }
                         canvas.width = w; canvas.height = h;
@@ -263,13 +261,14 @@
             });
         }
 
+        // احتساب مبالغ القطع فقط (o.price) بدون أجور التوصيل
         function refreshStats() {
             let delivered = 0, shipping = 0, total = 0;
             orders.forEach(o => {
-                const p = Number(o.total) || 0;
-                if (o.status === "واصل") delivered += p;
-                if (o.status === "بالطريق" || o.status === "قيد التجهيز") shipping += p;
-                if (o.status !== "راجع") total += p;
+                const itemPrice = Number(o.price) || 0;
+                if (o.status === "واصل") delivered += itemPrice;
+                if (o.status === "بالطريق" || o.status === "قيد التجهيز") shipping += itemPrice;
+                if (o.status !== "راجع") total += itemPrice;
             });
             document.getElementById("boxDelivered").innerText = delivered.toLocaleString() + " د.ع";
             document.getElementById("boxShipping").innerText = shipping.toLocaleString() + " د.ع";
@@ -391,12 +390,10 @@
                 status: "قيد التجهيز"
             };
 
-            // 1. يضاف فوراً أعلى المصفوفة وتُرسم الشاشة في أجزاء من الثانية
             orders.unshift(newOrder);
             safeSaveLocal();
             renderUI();
 
-            // 2. تصفير الحقول
             document.getElementById("cName").value = "";
             document.getElementById("cPhone").value = "";
             document.getElementById("cCode").value = "";
@@ -408,7 +405,6 @@
             activeImages = [];
             recalc();
 
-            // 3. مزامنة سحابية هادئة بالخلفية
             pushCloud();
         }
 
@@ -539,11 +535,9 @@
             const o = orders.find(x => x.id === id);
             if (!o) return;
 
-            const displayDate = o.formattedDate || formatDateTime(o.timestamp);
             let msg = `مرحباً بك زبوننا العزيز 🌸\n` +
                       `تم تأكيد طلبك بنجاح، إليك تفاصيل الوصل:\n` +
                       `━━━━━━━━━━━━━━\n` +
-                      `🕒 *التاريخ:* ${displayDate}\n` +
                       `👤 *الاسم:* ${o.name}\n` +
                       `🏷️ *كود القطعة:* ${o.code || '---'}\n` +
                       `📍 *عنوان التوصيل:* ${o.addr || 'غير محدد'}\n` +
@@ -560,10 +554,8 @@
             const o = orders.find(x => x.id === id);
             if (!o) return;
 
-            const displayDate = o.formattedDate || formatDateTime(o.timestamp);
             let msg = `🚚 *مهمة توصيل جديدة* 📦\n` +
                       `━━━━━━━━━━━━━━\n` +
-                      `🕒 *تاريخ الطلب:* ${displayDate}\n` +
                       `👤 *الزبون:* ${o.name}\n` +
                       `📞 *رقم الهاتف:* ${o.phone || 'غير مسجل'}\n` +
                       `📍 *العنوان:* ${o.addr || 'غير محدد'}\n` +
