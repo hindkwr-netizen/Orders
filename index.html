@@ -14,7 +14,7 @@
         .btn-reload { background: #0284c7; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
         .btn-export { background: #10b981; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
 
-        /* شريط المبالغ المدمج الأنيق */
+        /* شريط المبالغ المدمج */
         .stats-strip { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 8px 10px; display: flex; justify-content: space-around; align-items: center; margin-bottom: 10px; text-align: center; }
         .stat-item { flex: 1; }
         .stat-item:not(:last-child) { border-left: 1px solid #334155; }
@@ -47,7 +47,6 @@
         .cust-name { font-size: 16px; font-weight: bold; color: #fff; }
         .order-date { font-size: 11px; color: #94a3b8; background: #0f172a; padding: 2px 6px; border-radius: 4px; }
 
-        /* شارة الحالة بحجم كبير وبارز جداً */
         .status-banner { display: block; text-align: center; padding: 6px; border-radius: 6px; font-size: 14px; font-weight: 900; letter-spacing: 0.5px; margin-bottom: 8px; }
         .st-pending { background: #451a03; color: #fbbf24; border: 1px solid #d97706; }
         .st-shipping { background: #082f49; color: #38bdf8; border: 1px solid #0284c7; }
@@ -74,7 +73,6 @@
         .btn-status-back { background: #dc2626; color: #fff; }
         .btn-del { background: #7f1d1d; color: #fca5a5; margin-right: auto; }
 
-        /* الزر العائم في الأسفل لإضافة طلب */
         .fab-add { position: fixed; bottom: 18px; left: 18px; background: #2563eb; color: #fff; border: none; border-radius: 50px; padding: 14px 22px; font-size: 15px; font-weight: bold; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.5); cursor: pointer; z-index: 999; display: flex; align-items: center; gap: 6px; }
 
         /* نوافذ منبثقة */
@@ -86,7 +84,10 @@
         .calc-box { background: #0f172a; border: 1px solid #38bdf8; padding: 8px; border-radius: 8px; font-size: 12px; color: #38bdf8; text-align: center; font-weight: bold; margin-bottom: 8px; line-height: 1.5; }
         .upload-btn { display: block; background: #334155; padding: 10px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px dashed #38bdf8; margin-bottom: 8px; color: #38bdf8; }
         .previews { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; }
-        .thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #38bdf8; flex-shrink: 0; }
+        .thumb-wrapper { position: relative; display: inline-block; flex-shrink: 0; }
+        .thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #38bdf8; }
+        .thumb-remove-btn { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; font-weight: bold; cursor: pointer; line-height: 18px; text-align: center; }
+
         .btn-submit { background: #2563eb; color: #fff; border: 0; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; }
         .modal-close { background: #475569; color: #fff; border: 0; padding: 10px; width: 100%; border-radius: 8px; font-weight: bold; margin-top: 6px; cursor: pointer; }
         .img-modal img { max-width: 95%; max-height: 90%; border-radius: 8px; }
@@ -102,7 +103,6 @@
         </div>
     </div>
 
-    <!-- شريط المبالغ المالي المدمج في سطر واحد -->
     <div class="stats-strip">
         <div class="stat-item">
             <div class="stat-title">الواصل (قطع فقط)</div>
@@ -118,7 +118,6 @@
         </div>
     </div>
 
-    <!-- تصفية الأيام والفترات -->
     <div class="date-filter-bar">
         <div class="date-buttons">
             <button class="btn-date active" id="btnDateToday" onclick="setDateFilter('today', this)">اليوم</button>
@@ -131,7 +130,6 @@
 
     <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث بالاسم، الهاتف، العنوان..." oninput="handleSearch()">
 
-    <!-- تبويبات التصفية مع إضافة تبويبة "مؤجل" -->
     <div class="tabs">
         <button class="tab-btn active" onclick="filterTab('all', this)">الكل (<span id="totalBadge">0</span>)</button>
         <button class="tab-btn" onclick="filterTab('داخل خانقين', this)">داخل خانقين</button>
@@ -145,10 +143,9 @@
 
     <div id="ordersList"></div>
 
-    <!-- الزر العائم في الأسفل -->
     <button class="fab-add" onclick="openAddModal()">➕ إضافة طلب جديد</button>
 
-    <!-- نافذة منبثقة لإضافة طلب جديد -->
+    <!-- نافذة إضافة طلب جديد -->
     <div id="addModal" class="modal">
         <div class="modal-content">
             <div class="modal-title">📦 إضافة طلب جديد</div>
@@ -171,7 +168,7 @@
             <textarea id="cNotes" placeholder="ملاحظات إضافية (اختياري)"></textarea>
 
             <label class="upload-btn" for="fileInput">📷 اختيار صور المنتجات (عدة صور)</label>
-            <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="processImages(event)">
+            <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="processImages(event, 'new')">
             <div id="previewArea" class="previews"></div>
 
             <button type="button" class="btn-submit" onclick="createOrder()">تثبيت الطلب</button>
@@ -179,7 +176,7 @@
         </div>
     </div>
 
-    <!-- نافذة تعديل الطلب -->
+    <!-- نافذة تعديل الطلب مع ميزة إضافة صور جديدة وحذف صور سابقة -->
     <div id="editModal" class="modal">
         <div class="modal-content">
             <div class="modal-title">✏️ تعديل بيانات الطلب</div>
@@ -200,6 +197,13 @@
             </select>
             <label style="font-size:12px; color:#94a3b8;">ملاحظات:</label>
             <textarea id="editNotes"></textarea>
+
+            <!-- قسم إدارة الصور أثناء التعديل -->
+            <label style="font-size:12px; color:#94a3b8;">صور الطلب:</label>
+            <div id="editPreviewArea" class="previews"></div>
+            <label class="upload-btn" for="editFileInput" style="margin-top:4px;">📷 إضافة صور أخرى للمنتجات</label>
+            <input type="file" id="editFileInput" accept="image/*" multiple style="display:none;" onchange="processImages(event, 'edit')">
+
             <button class="btn-submit" style="background:#059669; margin-top:8px;" onclick="saveEditedOrder()">💾 حفظ التعديلات</button>
             <button class="modal-close" onclick="closeEditModal()">إلغاء</button>
         </div>
@@ -218,7 +222,8 @@
         let dateFilterMode = "today";
         let customDateVal = "";
         let searchQuery = "";
-        let activeImages = [];
+        let activeImages = [];      // للطلب الجديد
+        let editImages = [];        // للطلب قيد التعديل
 
         function loadExistingLocalData() {
             const keysToTry = [
@@ -325,7 +330,8 @@
             renderUI();
         }
 
-        function processImages(e) {
+        // معالجة الصور سواء كانت للطلب الجديد أو أثناء التعديل
+        function processImages(e, mode) {
             const files = Array.from(e.target.files);
             files.forEach(file => {
                 const r = new FileReader();
@@ -340,8 +346,13 @@
                         canvas.width = w; canvas.height = h;
                         canvas.getContext("2d").drawImage(img, 0, 0, w, h);
                         const b64 = canvas.toDataURL("image/jpeg", 0.4);
-                        activeImages.push(b64);
-                        renderThumbs();
+                        if (mode === 'new') {
+                            activeImages.push(b64);
+                            renderNewThumbs();
+                        } else {
+                            editImages.push(b64);
+                            renderEditThumbs();
+                        }
                     };
                     img.src = evt.target.result;
                 };
@@ -349,12 +360,40 @@
             });
         }
 
-        function renderThumbs() {
+        function renderNewThumbs() {
             const el = document.getElementById("previewArea");
             el.innerHTML = "";
-            activeImages.forEach(src => {
-                el.innerHTML += `<img src="${src}" class="thumb">`;
+            activeImages.forEach((src, idx) => {
+                el.innerHTML += `
+                    <div class="thumb-wrapper">
+                        <img src="${src}" class="thumb">
+                        <button type="button" class="thumb-remove-btn" onclick="removeNewImg(${idx})">✕</button>
+                    </div>
+                `;
             });
+        }
+
+        function removeNewImg(idx) {
+            activeImages.splice(idx, 1);
+            renderNewThumbs();
+        }
+
+        function renderEditThumbs() {
+            const el = document.getElementById("editPreviewArea");
+            el.innerHTML = "";
+            editImages.forEach((src, idx) => {
+                el.innerHTML += `
+                    <div class="thumb-wrapper">
+                        <img src="${src}" class="thumb">
+                        <button type="button" class="thumb-remove-btn" onclick="removeEditImg(${idx})">✕</button>
+                    </div>
+                `;
+            });
+        }
+
+        function removeEditImg(idx) {
+            editImages.splice(idx, 1);
+            renderEditThumbs();
         }
 
         function refreshStats(currentFilteredOrders) {
@@ -469,7 +508,6 @@
                             <span class="order-date">🕒 ${displayDate}</span>
                         </div>
                         
-                        <!-- إظهار حالة الطلب بشكل كبير وواضح في أعلى الكارت -->
                         <div class="status-banner ${statusBannerClass}">
                             الحالة: ${currentStatus}
                         </div>
@@ -561,11 +599,23 @@
             document.getElementById("editPrice").value = o.price || 0;
             document.getElementById("editMethod").value = o.method || o.by || "داخل خانقين";
             document.getElementById("editNotes").value = o.notes || "";
+
+            // تعبئة الصور الحالية في نافذة التعديل
+            if (Array.isArray(o.images)) {
+                editImages = [...o.images];
+            } else if (o.img) {
+                editImages = [o.img];
+            } else {
+                editImages = [];
+            }
+            renderEditThumbs();
+
             document.getElementById("editModal").style.display = "flex";
         }
 
         function closeEditModal() {
             document.getElementById("editModal").style.display = "none";
+            editImages = [];
         }
 
         function saveEditedOrder() {
@@ -587,7 +637,7 @@
 
             orders = orders.map(o => {
                 if (o.id === id) {
-                    return { ...o, name, phone, addr, price, fee, total, method, notes };
+                    return { ...o, name, phone, addr, price, fee, total, method, notes, images: [...editImages] };
                 }
                 return o;
             });
