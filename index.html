@@ -14,7 +14,6 @@
         .btn-reload { background: #0284c7; color: white; border: none; padding: 7px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
         .btn-export { background: #10b981; color: white; border: none; padding: 7px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
 
-        /* شريط فلترة الأيام */
         .date-filter-bar { background: #1e293b; padding: 10px; border-radius: 10px; border: 1px solid #38bdf8; margin-bottom: 12px; }
         .date-filter-title { font-size: 12px; font-weight: bold; color: #38bdf8; margin-bottom: 6px; }
         .date-buttons { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 8px; }
@@ -93,30 +92,30 @@
         </div>
     </div>
 
-    <!-- فلترة الأيام والفترات -->
+    <!-- تصفية الأيام ومضبوط افتراضياً على اليوم -->
     <div class="date-filter-bar">
-        <div class="date-filter-title">📅 فلترة الأيام لحساب المبيعات بدون توصيل:</div>
+        <div class="date-filter-title">📅 الفترة المحددة:</div>
         <div class="date-buttons">
-            <button class="btn-date active" onclick="setDateFilter('all', this)">كل الأوقات</button>
-            <button class="btn-date" onclick="setDateFilter('today', this)">اليوم</button>
+            <button class="btn-date active" id="btnDateToday" onclick="setDateFilter('today', this)">اليوم</button>
             <button class="btn-date" onclick="setDateFilter('yesterday', this)">البارحة</button>
             <button class="btn-date" onclick="setDateFilter('week', this)">آخر 7 أيام</button>
+            <button class="btn-date" onclick="setDateFilter('all', this)">كل الأوقات</button>
         </div>
         <input type="date" id="specificDatePicker" class="custom-date-input" onchange="onCustomDateChange(this.value)">
     </div>
 
-    <!-- الصناديق المالية لحساب سعر القطع فقط -->
+    <!-- الصناديق المالية لحساب سعر القطع فقط لليوم -->
     <div class="stats">
         <div class="stat-box">
-            <div class="stat-title">الواصل (قطع فقط)</div>
+            <div class="stat-title">الواصل اليوم (قطع فقط)</div>
             <div class="stat-val" style="color:#34d399;" id="boxDelivered">0 د.ع</div>
         </div>
         <div class="stat-box">
-            <div class="stat-title">بالطريق (قطع فقط)</div>
+            <div class="stat-title">بالطريق اليوم (قطع فقط)</div>
             <div class="stat-val" style="color:#38bdf8;" id="boxShipping">0 د.ع</div>
         </div>
         <div class="stat-box full">
-            <div class="stat-title" id="statMainLabel">المجموع الكلي للمبيعات (سعر القطع فقط)</div>
+            <div class="stat-title" id="statMainLabel">مبيعات اليوم (سعر القطع فقط بدون توصيل)</div>
             <div class="stat-val" id="boxTotal">0 د.ع</div>
         </div>
     </div>
@@ -196,36 +195,61 @@
 
     <script>
         const FIREBASE_URL = "https://orders-99674-default-rtdb.firebaseio.com/orders.json";
-        const LOCAL_KEY = "orders_secure_db_v4";
+        const PRIMARY_KEY = "orders_v5_master";
 
         let orders = [];
         let selectedTab = "all";
-        let dateFilterMode = "all"; // all, today, yesterday, week, custom
+        let dateFilterMode = "today"; // ضبط الفلتر ليكون اليوم تلقائياً
         let customDateVal = "";
         let searchQuery = "";
         let activeImages = [];
 
-        try {
-            const saved = localStorage.getItem(LOCAL_KEY);
-            if (saved) orders = JSON.parse(saved);
-        } catch(e) {
-            orders = [];
+        function loadExistingLocalData() {
+            const keysToTry = [
+                PRIMARY_KEY,
+                "orders_secure_db_v4",
+                "simple_orders_storage_v1",
+                "local_orders_data_store",
+                "orders_v3_secure_cache",
+                "offline_orders_data_v2"
+            ];
+            
+            let recovered = [];
+            for (let k of keysToTry) {
+                try {
+                    const raw = localStorage.getItem(k);
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            recovered = parsed;
+                            break;
+                        } else if (typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+                            recovered = Object.keys(parsed).map(id => ({ ...parsed[id], id: id }));
+                            break;
+                        }
+                    }
+                } catch(e) {}
+            }
+            return recovered;
         }
+
+        orders = loadExistingLocalData();
 
         function safeSaveLocal() {
             try {
-                localStorage.setItem(LOCAL_KEY, JSON.stringify(orders));
+                localStorage.setItem(PRIMARY_KEY, JSON.stringify(orders));
             } catch(e) {
                 try {
                     const lightweight = orders.map(o => ({ ...o, images: [] }));
-                    localStorage.setItem(LOCAL_KEY, JSON.stringify(lightweight));
+                    localStorage.setItem(PRIMARY_KEY, JSON.stringify(lightweight));
                 } catch(err) {}
             }
         }
 
         function calcFee(method) {
-            if (method === "داخل خانقين") return 2000;
-            if (method === "المحافظات") return 5000;
+            if (!method) return 0;
+            if (method.includes("خانقين")) return 2000;
+            if (method.includes("المحافظات") || method.includes("شركة")) return 5000;
             return 0;
         }
 
@@ -267,10 +291,10 @@
             if (btn) btn.classList.add("active");
 
             const labelMap = {
-                'all': 'المجموع الكلي للمبيعات (سعر القطع فقط)',
-                'today': 'مبيعات اليوم (سعر القطع فقط)',
+                'today': 'مبيعات اليوم (سعر القطع فقط بدون توصيل)',
                 'yesterday': 'مبيعات البارحة (سعر القطع فقط)',
-                'week': 'مبيعات آخر 7 أيام (سعر القطع فقط)'
+                'week': 'مبيعات آخر 7 أيام (سعر القطع فقط)',
+                'all': 'المجموع الكلي لكافة الأوقات (سعر القطع فقط)'
             };
             document.getElementById("statMainLabel").innerText = labelMap[mode] || 'المجموع (سعر القطع فقط)';
             renderUI();
@@ -317,12 +341,11 @@
             });
         }
 
-        // احتساب مبالغ المبيعات (سعر القطع فقط دون أجور التوصيل) للطلبات المصفاة حسب اليوم
         function refreshStats(currentFilteredOrders) {
             let delivered = 0, shipping = 0, total = 0;
             currentFilteredOrders.forEach(o => {
                 const itemPrice = Number(o.price) || 0;
-                if (o.status === "واصل") delivered += itemPrice;
+                if (o.status === "واصل" || o.status === "تم التسليم") delivered += itemPrice;
                 if (o.status === "بالطريق" || o.status === "قيد التجهيز") shipping += itemPrice;
                 if (o.status !== "راجع") total += itemPrice;
             });
@@ -337,12 +360,12 @@
         }
 
         function isOrderInSelectedDate(o) {
-            const t = o.timestamp || Date.now();
+            if (dateFilterMode === "all") return true;
+            const t = o.timestamp || o.date || Date.now();
             const orderDateStr = getDateOnlyStr(t);
             const now = new Date();
             const todayStr = getDateOnlyStr(now.getTime());
 
-            if (dateFilterMode === "all") return true;
             if (dateFilterMode === "today") return orderDateStr === todayStr;
             if (dateFilterMode === "yesterday") {
                 const yest = new Date(now);
@@ -364,6 +387,377 @@
             const list = document.getElementById("ordersList");
             list.innerHTML = "";
 
-            // تصفية حسب التاريخ أولاً لحساب الأرباح بدقة
             let dateFiltered = orders.filter(isOrderInSelectedDate);
-            refreshStats(dateFiltered
+            refreshStats(dateFiltered);
+
+            let filtered = dateFiltered.filter(o => {
+                let matchesTab = true;
+                const m = o.method || o.by || "";
+                if (selectedTab === "داخل خانقين") matchesTab = m.includes("خانقين");
+                else if (selectedTab === "المحافظات") matchesTab = (m.includes("المحافظات") || m.includes("شركة"));
+                else if (selectedTab === "بدون توصيل") matchesTab = m.includes("بدون توصيل");
+                else if (selectedTab !== "all") matchesTab = (o.status === selectedTab);
+
+                if (!matchesTab) return false;
+
+                if (searchQuery) {
+                    const name = (o.name || "").toLowerCase();
+                    const phone = (o.phone || "").toLowerCase();
+                    const code = (o.code || "").toLowerCase();
+                    const addr = (o.addr || "").toLowerCase();
+                    return name.includes(searchQuery) || phone.includes(searchQuery) || code.includes(searchQuery) || addr.includes(searchQuery);
+                }
+                return true;
+            });
+
+            document.getElementById("totalBadge").innerText = filtered.length;
+
+            if (filtered.length === 0) {
+                list.innerHTML = `<p style="text-align:center; color:#64748b; padding:25px;">لا توجد طلبات مسجلة لليوم حتى الآن 📦</p>`;
+                return;
+            }
+
+            filtered.forEach(o => {
+                let statusClass = "pending";
+                if (o.status === "بالطريق") statusClass = "shipping";
+                if (o.status === "واصل" || o.status === "تم التسليم") statusClass = "delivered";
+                if (o.status === "راجع") statusClass = "returned";
+
+                let imgs = [];
+                if (Array.isArray(o.images)) imgs = o.images;
+                else if (o.img) imgs = [o.img];
+
+                let imgsHtml = "";
+                if (imgs.length > 0) {
+                    imgsHtml = `<div class="img-gallery">` +
+                        imgs.map(img => `<img src="${img}" onclick="viewImg('${img}')">`).join("") +
+                        `</div>`;
+                }
+
+                const displayDate = o.formattedDate || formatDateTime(o.timestamp || o.date);
+                const itemPrice = Number(o.price) || 0;
+                const method = o.method || o.by || "داخل خانقين";
+                const fee = (o.fee !== undefined) ? Number(o.fee) : ((o.deliveryFee !== undefined) ? Number(o.deliveryFee) : calcFee(method));
+                const total = o.total ? Number(o.total) : (o.totalPrice ? Number(o.totalPrice) : (itemPrice + fee));
+
+                list.innerHTML += `
+                    <div class="card ${statusClass}">
+                        <div class="card-header">
+                            <span class="cust-name">${o.name}</span>
+                            <div class="header-tags">
+                                <span class="order-date">🕒 ${displayDate}</span>
+                                <span class="item-code">كود: ${o.code || '---'}</span>
+                            </div>
+                        </div>
+                        <div class="card-details">
+                            📍 العنوان: ${o.addr || 'غير محدد'}<br>
+                            💵 السعر قبل التوصيل: <strong>${itemPrice.toLocaleString()} د.ع</strong><br>
+                            🚚 أجور التوصيل: <strong>${fee.toLocaleString()} د.ع</strong> (${method})<br>
+                            💰 <span style="color:#38bdf8; font-weight:bold;">السعر بعد التوصيل: ${total.toLocaleString()} د.ع</span><br>
+                            الحالة: <strong>${o.status}</strong>
+                        </div>
+                        ${imgsHtml}
+                        ${o.notes ? `<div class="note-tag">📝 ${o.notes}</div>` : ''}
+                        <div class="action-btns">
+                            ${o.phone ? `<a href="tel:${o.phone}" class="btn-call">📞 اتصال</a>` : ''}
+                            <button class="btn-wa-cust" onclick="shareToCustomer('${o.id}')">👤 وصل الزبون</button>
+                            <button class="btn-wa-driver" onclick="shareToDriver('${o.id}')">🚚 وصل المندوب</button>
+                            <button class="btn-edit" onclick="openEditModal('${o.id}')">✏️ تعديل</button>
+                            <button class="btn-status-ship" onclick="updateStatus('${o.id}', 'بالطريق')">بالطريق</button>
+                            <button class="btn-status-done" onclick="updateStatus('${o.id}', 'واصل')">واصل</button>
+                            <button class="btn-status-back" onclick="updateStatus('${o.id}', 'راجع')">راجع</button>
+                            <button class="btn-del" onclick="deleteOrder('${o.id}')">حذف</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function createOrder() {
+            const name = document.getElementById("cName").value.trim();
+            const phone = document.getElementById("cPhone").value.trim();
+            const code = document.getElementById("cCode").value.trim();
+            const addr = document.getElementById("cAddr").value.trim();
+            const price = parseFloat(document.getElementById("cPrice").value) || 0;
+            const method = document.getElementById("cMethod").value;
+            const notes = document.getElementById("cNotes").value.trim();
+
+            if (!name) {
+                alert("يرجى إدخال اسم الزبون");
+                return;
+            }
+
+            const fee = calcFee(method);
+            const total = price + fee;
+            const now = Date.now();
+
+            const newOrder = {
+                id: "id_" + now,
+                name, phone, 
+                code: code || '---', 
+                addr, price, fee, total, method, notes,
+                timestamp: now,
+                formattedDate: formatDateTime(now),
+                images: [...activeImages],
+                status: "قيد التجهيز"
+            };
+
+            orders.unshift(newOrder);
+            safeSaveLocal();
+            renderUI();
+
+            document.getElementById("cName").value = "";
+            document.getElementById("cPhone").value = "";
+            document.getElementById("cCode").value = "";
+            document.getElementById("cAddr").value = "";
+            document.getElementById("cPrice").value = "";
+            document.getElementById("cNotes").value = "";
+            document.getElementById("fileInput").value = "";
+            document.getElementById("previewArea").innerHTML = "";
+            activeImages = [];
+            recalc();
+
+            pushCloud();
+        }
+
+        function openEditModal(id) {
+            const o = orders.find(x => x.id === id);
+            if (!o) return;
+            document.getElementById("editId").value = o.id;
+            document.getElementById("editName").value = o.name || "";
+            document.getElementById("editPhone").value = o.phone || "";
+            document.getElementById("editCode").value = o.code || "";
+            document.getElementById("editAddr").value = o.addr || "";
+            document.getElementById("editPrice").value = o.price || 0;
+            document.getElementById("editMethod").value = o.method || o.by || "داخل خانقين";
+            document.getElementById("editNotes").value = o.notes || "";
+            document.getElementById("editModal").style.display = "flex";
+        }
+
+        function closeEditModal() {
+            document.getElementById("editModal").style.display = "none";
+        }
+
+        function saveEditedOrder() {
+            const id = document.getElementById("editId").value;
+            const name = document.getElementById("editName").value.trim();
+            const phone = document.getElementById("editPhone").value.trim();
+            const code = document.getElementById("editCode").value.trim();
+            const addr = document.getElementById("editAddr").value.trim();
+            const price = parseFloat(document.getElementById("editPrice").value) || 0;
+            const method = document.getElementById("editMethod").value;
+            const notes = document.getElementById("editNotes").value.trim();
+
+            if (!name) {
+                alert("يرجى كتابة اسم الزبون");
+                return;
+            }
+
+            const fee = calcFee(method);
+            const total = price + fee;
+
+            orders = orders.map(o => {
+                if (o.id === id) {
+                    return { ...o, name, phone, code, addr, price, fee, total, method, notes };
+                }
+                return o;
+            });
+
+            safeSaveLocal();
+            renderUI();
+            closeEditModal();
+            pushCloud();
+        }
+
+        function pushCloud() {
+            document.getElementById("netStatus").innerText = "⏳ جاري التحديث...";
+            fetch(FIREBASE_URL, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(orders)
+            }).then(() => {
+                document.getElementById("netStatus").innerText = "🟢 متزامن مع صديقك";
+            }).catch(() => {
+                document.getElementById("netStatus").innerText = "🟢 محفوظ على الهاتف";
+            });
+        }
+
+        function fetchOrders() {
+            fetch(FIREBASE_URL)
+                .then(res => res.json())
+                .then(data => {
+                    if (data) {
+                        let remoteList = [];
+                        if (Array.isArray(data)) {
+                            remoteList = data;
+                        } else if (typeof data === 'object') {
+                            remoteList = Object.keys(data).map(key => ({ ...data[key], id: key }));
+                        }
+                        
+                        if (remoteList.length > 0) {
+                            const map = new Map();
+                            orders.forEach(o => { if (o && o.id) map.set(o.id, o); });
+                            remoteList.forEach(o => { if (o && o.id) map.set(o.id, o); });
+                            orders = Array.from(map.values());
+                            
+                            safeSaveLocal();
+                            renderUI();
+                            document.getElementById("netStatus").innerText = "🟢 متزامن مع صديقك";
+                        }
+                    }
+                }).catch(() => {});
+        }
+
+        function updateStatus(id, newStatus) {
+            orders = orders.map(o => o.id === id ? { ...o, status: newStatus } : o);
+            safeSaveLocal();
+            renderUI();
+            pushCloud();
+        }
+
+        function deleteOrder(id) {
+            if (confirm("هل تريد حذف هذا الطلب؟")) {
+                orders = orders.filter(o => o.id !== id);
+                safeSaveLocal();
+                renderUI();
+                pushCloud();
+            }
+        }
+
+        function filterTab(tab, btn) {
+            selectedTab = tab;
+            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            renderUI();
+        }
+
+        function b64toBlobFile(b64Data, filename) {
+            const parts = b64Data.split(';base64,');
+            const contentType = parts[0].split(':')[1];
+            const raw = window.atob(parts[1]);
+            const rawLength = raw.length;
+            const uInt8Array = new Uint8Array(rawLength);
+            for (let i = 0; i < rawLength; ++i) {
+                uInt8Array[i] = raw.charCodeAt(i);
+            }
+            return new File([uInt8Array], filename, { type: contentType });
+        }
+
+        async function executeShare(msg, images, title) {
+            let imgs = [];
+            if (Array.isArray(images)) imgs = images;
+            else if (images) imgs = [images];
+
+            if (imgs.length > 0 && navigator.share) {
+                try {
+                    const files = imgs.map((img, i) => b64toBlobFile(img, `item_${i + 1}.jpg`));
+                    if (navigator.canShare && navigator.canShare({ files: files })) {
+                        await navigator.share({ files: files, title: title, text: msg });
+                        return;
+                    }
+                } catch(err) {}
+            }
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function shareToCustomer(id) {
+            const o = orders.find(x => x.id === id);
+            if (!o) return;
+
+            const itemPrice = Number(o.price) || 0;
+            const method = o.method || o.by || "داخل خانقين";
+            const fee = (o.fee !== undefined) ? Number(o.fee) : ((o.deliveryFee !== undefined) ? Number(o.deliveryFee) : calcFee(method));
+            const total = o.total ? Number(o.total) : (o.totalPrice ? Number(o.totalPrice) : (itemPrice + fee));
+
+            let msg = `مرحباً بك زبوننا العزيز 🌸\n` +
+                      `تم تأكيد طلبك بنجاح، إليك تفاصيل الوصل:\n` +
+                      `━━━━━━━━━━━━━━\n` +
+                      `👤 *الاسم:* ${o.name}\n` +
+                      `🏷️ *كود القطعة:* ${o.code || '---'}\n` +
+                      `📍 *عنوان التوصيل:* ${o.addr || 'غير محدد'}\n` +
+                      `💵 *سعر الطلب:* ${itemPrice.toLocaleString()} دينار\n` +
+                      `🚚 *أجور التوصيل:* ${fee.toLocaleString()} دينار\n` +
+                      `💰 *المبلغ الصافي المطلوب عند الاستلام:* ${total.toLocaleString()} دينار\n`;
+            if (o.notes) msg += `📝 *ملاحظة:* ${o.notes}\n`;
+            msg += `━━━━━━━━━━━━━━\nنشكرك على ثقتك بنا ونتمنى لك يوماً سعيداً ❤️`;
+
+            executeShare(msg, o.images || o.img, 'وصل طلبك');
+        }
+
+        function shareToDriver(id) {
+            const o = orders.find(x => x.id === id);
+            if (!o) return;
+
+            const itemPrice = Number(o.price) || 0;
+            const method = o.method || o.by || "داخل خانقين";
+            const fee = (o.fee !== undefined) ? Number(o.fee) : ((o.deliveryFee !== undefined) ? Number(o.deliveryFee) : calcFee(method));
+            const total = o.total ? Number(o.total) : (o.totalPrice ? Number(o.totalPrice) : (itemPrice + fee));
+
+            let msg = `🚚 *مهمة توصيل جديدة* 📦\n` +
+                      `━━━━━━━━━━━━━━\n` +
+                      `👤 *الزبون:* ${o.name}\n` +
+                      `📞 *رقم الهاتف:* ${o.phone || 'غير مسجل'}\n` +
+                      `📍 *العنوان:* ${o.addr || 'غير محدد'}\n` +
+                      `🏷️ *كود القطعة:* ${o.code || '---'}\n` +
+                      `💰 *المبلغ المطلوب قبضه من الزبون:* ${total.toLocaleString()} دينار\n` +
+                      `🚚 *نوع الشحنة:* ${method}\n`;
+            if (o.notes) msg += `⚠️ *ملاحظات التوصيل:* ${o.notes}\n`;
+            msg += `━━━━━━━━━━━━━━\nيرجى التواصل مع الزبون قبل التوجه إليه.`;
+
+            executeShare(msg, o.images || o.img, 'مهمة توصيل');
+        }
+
+        function exportToExcel() {
+            if (orders.length === 0) {
+                alert("لا توجد طلبات لتصديرها حالياً!");
+                return;
+            }
+
+            let csvContent = "\uFEFF";
+            csvContent += "تاريخ الطلب,اسم الزبون,رقم الهاتف,كود القطعة,العنوان,طريقة التوصيل,السعر قبل التوصيل,أجور التوصيل,المجموع الكلي,الحالة,ملاحظات\n";
+
+            orders.forEach(o => {
+                const date = o.formattedDate || formatDateTime(o.timestamp || o.date);
+                const itemPrice = Number(o.price) || 0;
+                const method = o.method || o.by || "";
+                const fee = (o.fee !== undefined) ? Number(o.fee) : ((o.deliveryFee !== undefined) ? Number(o.deliveryFee) : calcFee(method));
+                const total = o.total ? Number(o.total) : (o.totalPrice ? Number(o.totalPrice) : (itemPrice + fee));
+
+                const row = [
+                    `"${date}"`,
+                    `"${o.name || ''}"`,
+                    `"${o.phone || ''}"`,
+                    `"${o.code || ''}"`,
+                    `"${o.addr || ''}"`,
+                    `"${method}"`,
+                    `"${itemPrice}"`,
+                    `"${fee}"`,
+                    `"${total}"`,
+                    `"${o.status || ''}"`,
+                    `"${(o.notes || '').replace(/"/g, '""')}"`
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `تقرير_الطلبات.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function viewImg(src) {
+            document.getElementById("modalViewer").src = src;
+            document.getElementById("modal").style.display = "flex";
+        }
+
+        recalc();
+        renderUI();
+        fetchOrders();
+        setInterval(fetchOrders, 4000);
+    </script>
+</body>
+</html>
