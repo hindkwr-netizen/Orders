@@ -36,9 +36,9 @@
 
         .calc-box { background: #0f172a; border: 1px solid #38bdf8; padding: 10px; border-radius: 8px; font-size: 13px; color: #38bdf8; text-align: center; font-weight: bold; margin-bottom: 8px; line-height: 1.6; }
 
-        .upload-btn { display: block; background: #334155; padding: 9px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px dashed #38bdf8; margin-bottom: 8px; color: #38bdf8; }
+        .upload-btn { display: block; background: #334155; padding: 10px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px dashed #38bdf8; margin-bottom: 8px; color: #38bdf8; }
         .previews { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; }
-        .thumb { width: 55px; height: 55px; object-fit: cover; border-radius: 6px; border: 1px solid #38bdf8; flex-shrink: 0; }
+        .thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #38bdf8; flex-shrink: 0; }
 
         .btn-add { background: #2563eb; color: #fff; border: 0; width: 100%; padding: 13px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
 
@@ -54,13 +54,11 @@
 
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
         .cust-name { font-size: 15px; font-weight: bold; color: #fff; }
-        .header-tags { display: flex; gap: 4px; align-items: center; }
         .order-date { font-size: 11px; color: #94a3b8; background: #0f172a; padding: 2px 6px; border-radius: 4px; }
-        .item-code { background: #334155; padding: 2px 7px; border-radius: 6px; font-size: 12px; font-weight: bold; }
         .card-details { font-size: 13px; color: #cbd5e1; line-height: 1.7; margin-bottom: 8px; }
 
         .img-gallery { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; }
-        .img-gallery img { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid #475569; cursor: pointer; flex-shrink: 0; }
+        .img-gallery img { width: 75px; height: 75px; object-fit: cover; border-radius: 6px; border: 1px solid #475569; cursor: pointer; flex-shrink: 0; }
 
         .note-tag { background: #334155; border: 1px dashed #f59e0b; padding: 6px; border-radius: 6px; font-size: 12px; color: #fde047; margin-bottom: 8px; }
 
@@ -92,7 +90,7 @@
         </div>
     </div>
 
-    <!-- تصفية الأيام ومضبوط افتراضياً على اليوم -->
+    <!-- تصفية الأيام -->
     <div class="date-filter-bar">
         <div class="date-filter-title">📅 الفترة المحددة:</div>
         <div class="date-buttons">
@@ -104,7 +102,7 @@
         <input type="date" id="specificDatePicker" class="custom-date-input" onchange="onCustomDateChange(this.value)">
     </div>
 
-    <!-- الصناديق المالية لحساب سعر القطع فقط لليوم -->
+    <!-- الصناديق المالية لحساب سعر القطع الصافي -->
     <div class="stats">
         <div class="stat-box">
             <div class="stat-title">الواصل اليوم (قطع فقط)</div>
@@ -120,15 +118,15 @@
         </div>
     </div>
 
-    <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث بالاسم، الهاتف، الكود..." oninput="handleSearch()">
+    <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث بالاسم، الهاتف، العنوان..." oninput="handleSearch()">
 
+    <!-- نموذج إضافة طلب مبسط بدون كود القطعة -->
     <div class="box">
         <h3 style="margin-bottom: 10px; font-size: 15px;">إضافة طلب جديد 📦</h3>
         <input type="text" id="cName" placeholder="اسم الزبون (مطلوب)">
         <input type="tel" id="cPhone" placeholder="رقم الهاتف">
-        <input type="text" id="cCode" placeholder="كود القطعة">
-        <input type="text" id="cAddr" placeholder="العنوان">
-        <input type="number" id="cPrice" placeholder="السعر قبل التوصيل (دينار)" oninput="recalc()">
+        <input type="text" id="cAddr" placeholder="العنوان بالتفصيل">
+        <input type="number" id="cPrice" placeholder="سعر القطع (دينار)" oninput="recalc()">
         
         <select id="cMethod" onchange="recalc()">
             <option value="داخل خانقين">توصيل: داخل خانقين (+2,000 د.ع)</option>
@@ -143,7 +141,7 @@
 
         <textarea id="cNotes" placeholder="ملاحظات إضافية (اختياري)"></textarea>
 
-        <label class="upload-btn" for="fileInput">📷 اختيار صور أو سكرين شوت</label>
+        <label class="upload-btn" for="fileInput">📷 اختيار صور المنتجات (يمكنك اختيار عدة صور)</label>
         <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="processImages(event)">
         <div id="previewArea" class="previews"></div>
 
@@ -162,6 +160,7 @@
 
     <div id="ordersList"></div>
 
+    <!-- نافذة تعديل الطلب مبسطة بدون كود القطعة -->
     <div id="editModal" class="modal">
         <div class="modal-content">
             <div class="modal-title">✏️ تعديل بيانات الطلب</div>
@@ -170,8 +169,6 @@
             <input type="text" id="editName">
             <label style="font-size:12px; color:#94a3b8;">رقم الهاتف:</label>
             <input type="tel" id="editPhone">
-            <label style="font-size:12px; color:#94a3b8;">كود القطعة:</label>
-            <input type="text" id="editCode">
             <label style="font-size:12px; color:#94a3b8;">العنوان:</label>
             <input type="text" id="editAddr">
             <label style="font-size:12px; color:#94a3b8;">السعر قبل التوصيل:</label>
@@ -199,7 +196,7 @@
 
         let orders = [];
         let selectedTab = "all";
-        let dateFilterMode = "today"; // ضبط الفلتر ليكون اليوم تلقائياً
+        let dateFilterMode = "today";
         let customDateVal = "";
         let searchQuery = "";
         let activeImages = [];
@@ -403,9 +400,8 @@
                 if (searchQuery) {
                     const name = (o.name || "").toLowerCase();
                     const phone = (o.phone || "").toLowerCase();
-                    const code = (o.code || "").toLowerCase();
                     const addr = (o.addr || "").toLowerCase();
-                    return name.includes(searchQuery) || phone.includes(searchQuery) || code.includes(searchQuery) || addr.includes(searchQuery);
+                    return name.includes(searchQuery) || phone.includes(searchQuery) || addr.includes(searchQuery);
                 }
                 return true;
             });
@@ -413,7 +409,7 @@
             document.getElementById("totalBadge").innerText = filtered.length;
 
             if (filtered.length === 0) {
-                list.innerHTML = `<p style="text-align:center; color:#64748b; padding:25px;">لا توجد طلبات مسجلة لليوم حتى الآن 📦</p>`;
+                list.innerHTML = `<p style="text-align:center; color:#64748b; padding:25px;">لا توجد طلبات مسجلة لهذه الفترة 📦</p>`;
                 return;
             }
 
@@ -444,10 +440,7 @@
                     <div class="card ${statusClass}">
                         <div class="card-header">
                             <span class="cust-name">${o.name}</span>
-                            <div class="header-tags">
-                                <span class="order-date">🕒 ${displayDate}</span>
-                                <span class="item-code">كود: ${o.code || '---'}</span>
-                            </div>
+                            <span class="order-date">🕒 ${displayDate}</span>
                         </div>
                         <div class="card-details">
                             📍 العنوان: ${o.addr || 'غير محدد'}<br>
@@ -476,7 +469,6 @@
         function createOrder() {
             const name = document.getElementById("cName").value.trim();
             const phone = document.getElementById("cPhone").value.trim();
-            const code = document.getElementById("cCode").value.trim();
             const addr = document.getElementById("cAddr").value.trim();
             const price = parseFloat(document.getElementById("cPrice").value) || 0;
             const method = document.getElementById("cMethod").value;
@@ -494,7 +486,6 @@
             const newOrder = {
                 id: "id_" + now,
                 name, phone, 
-                code: code || '---', 
                 addr, price, fee, total, method, notes,
                 timestamp: now,
                 formattedDate: formatDateTime(now),
@@ -508,7 +499,6 @@
 
             document.getElementById("cName").value = "";
             document.getElementById("cPhone").value = "";
-            document.getElementById("cCode").value = "";
             document.getElementById("cAddr").value = "";
             document.getElementById("cPrice").value = "";
             document.getElementById("cNotes").value = "";
@@ -526,7 +516,6 @@
             document.getElementById("editId").value = o.id;
             document.getElementById("editName").value = o.name || "";
             document.getElementById("editPhone").value = o.phone || "";
-            document.getElementById("editCode").value = o.code || "";
             document.getElementById("editAddr").value = o.addr || "";
             document.getElementById("editPrice").value = o.price || 0;
             document.getElementById("editMethod").value = o.method || o.by || "داخل خانقين";
@@ -542,7 +531,6 @@
             const id = document.getElementById("editId").value;
             const name = document.getElementById("editName").value.trim();
             const phone = document.getElementById("editPhone").value.trim();
-            const code = document.getElementById("editCode").value.trim();
             const addr = document.getElementById("editAddr").value.trim();
             const price = parseFloat(document.getElementById("editPrice").value) || 0;
             const method = document.getElementById("editMethod").value;
@@ -558,7 +546,7 @@
 
             orders = orders.map(o => {
                 if (o.id === id) {
-                    return { ...o, name, phone, code, addr, price, fee, total, method, notes };
+                    return { ...o, name, phone, addr, price, fee, total, method, notes };
                 }
                 return o;
             });
@@ -673,7 +661,6 @@
                       `تم تأكيد طلبك بنجاح، إليك تفاصيل الوصل:\n` +
                       `━━━━━━━━━━━━━━\n` +
                       `👤 *الاسم:* ${o.name}\n` +
-                      `🏷️ *كود القطعة:* ${o.code || '---'}\n` +
                       `📍 *عنوان التوصيل:* ${o.addr || 'غير محدد'}\n` +
                       `💵 *سعر الطلب:* ${itemPrice.toLocaleString()} دينار\n` +
                       `🚚 *أجور التوصيل:* ${fee.toLocaleString()} دينار\n` +
@@ -698,7 +685,6 @@
                       `👤 *الزبون:* ${o.name}\n` +
                       `📞 *رقم الهاتف:* ${o.phone || 'غير مسجل'}\n` +
                       `📍 *العنوان:* ${o.addr || 'غير محدد'}\n` +
-                      `🏷️ *كود القطعة:* ${o.code || '---'}\n` +
                       `💰 *المبلغ المطلوب قبضه من الزبون:* ${total.toLocaleString()} دينار\n` +
                       `🚚 *نوع الشحنة:* ${method}\n`;
             if (o.notes) msg += `⚠️ *ملاحظات التوصيل:* ${o.notes}\n`;
@@ -714,7 +700,7 @@
             }
 
             let csvContent = "\uFEFF";
-            csvContent += "تاريخ الطلب,اسم الزبون,رقم الهاتف,كود القطعة,العنوان,طريقة التوصيل,السعر قبل التوصيل,أجور التوصيل,المجموع الكلي,الحالة,ملاحظات\n";
+            csvContent += "تاريخ الطلب,اسم الزبون,رقم الهاتف,العنوان,طريقة التوصيل,السعر قبل التوصيل,أجور التوصيل,المجموع الكلي,الحالة,ملاحظات\n";
 
             orders.forEach(o => {
                 const date = o.formattedDate || formatDateTime(o.timestamp || o.date);
@@ -727,7 +713,6 @@
                     `"${date}"`,
                     `"${o.name || ''}"`,
                     `"${o.phone || ''}"`,
-                    `"${o.code || ''}"`,
                     `"${o.addr || ''}"`,
                     `"${method}"`,
                     `"${itemPrice}"`,
