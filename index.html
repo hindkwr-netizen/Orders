@@ -14,6 +14,14 @@
         .btn-reload { background: #0284c7; color: white; border: none; padding: 7px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
         .btn-export { background: #10b981; color: white; border: none; padding: 7px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
 
+        /* شريط فلترة الأيام */
+        .date-filter-bar { background: #1e293b; padding: 10px; border-radius: 10px; border: 1px solid #38bdf8; margin-bottom: 12px; }
+        .date-filter-title { font-size: 12px; font-weight: bold; color: #38bdf8; margin-bottom: 6px; }
+        .date-buttons { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 8px; }
+        .btn-date { background: #334155; color: #cbd5e1; border: 0; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+        .btn-date.active { background: #0284c7; color: #fff; }
+        .custom-date-input { width: 100%; padding: 8px; background: #0f172a; border: 1px solid #475569; border-radius: 6px; color: #fff; font-size: 13px; outline: none; }
+
         .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
         .stat-box { background: #1e293b; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #334155; }
         .stat-box.full { grid-column: span 2; background: #0284c7; border: none; }
@@ -85,23 +93,35 @@
         </div>
     </div>
 
-    <!-- الصناديق المالية بحساب سعر القطع الصافي فقط دون التوصيل -->
+    <!-- فلترة الأيام والفترات -->
+    <div class="date-filter-bar">
+        <div class="date-filter-title">📅 فلترة الأيام لحساب المبيعات بدون توصيل:</div>
+        <div class="date-buttons">
+            <button class="btn-date active" onclick="setDateFilter('all', this)">كل الأوقات</button>
+            <button class="btn-date" onclick="setDateFilter('today', this)">اليوم</button>
+            <button class="btn-date" onclick="setDateFilter('yesterday', this)">البارحة</button>
+            <button class="btn-date" onclick="setDateFilter('week', this)">آخر 7 أيام</button>
+        </div>
+        <input type="date" id="specificDatePicker" class="custom-date-input" onchange="onCustomDateChange(this.value)">
+    </div>
+
+    <!-- الصناديق المالية لحساب سعر القطع فقط -->
     <div class="stats">
         <div class="stat-box">
-            <div class="stat-title">المبالغ الواصلة (قطع فقط)</div>
+            <div class="stat-title">الواصل (قطع فقط)</div>
             <div class="stat-val" style="color:#34d399;" id="boxDelivered">0 د.ع</div>
         </div>
         <div class="stat-box">
-            <div class="stat-title">مبالغ في الطريق (قطع فقط)</div>
+            <div class="stat-title">بالطريق (قطع فقط)</div>
             <div class="stat-val" style="color:#38bdf8;" id="boxShipping">0 د.ع</div>
         </div>
         <div class="stat-box full">
-            <div class="stat-title">المجموع الكلي (سعر القطع فقط بدون توصيل)</div>
+            <div class="stat-title" id="statMainLabel">المجموع الكلي للمبيعات (سعر القطع فقط)</div>
             <div class="stat-val" id="boxTotal">0 د.ع</div>
         </div>
     </div>
 
-    <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث بالاسم، الهاتف، الكود، أو التاريخ..." oninput="handleSearch()">
+    <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث بالاسم، الهاتف، الكود..." oninput="handleSearch()">
 
     <div class="box">
         <h3 style="margin-bottom: 10px; font-size: 15px;">إضافة طلب جديد 📦</h3>
@@ -180,6 +200,8 @@
 
         let orders = [];
         let selectedTab = "all";
+        let dateFilterMode = "all"; // all, today, yesterday, week, custom
+        let customDateVal = "";
         let searchQuery = "";
         let activeImages = [];
 
@@ -229,6 +251,40 @@
             return `${year}/${month}/${day} - ${hours}:${minutes} ${ampm}`;
         }
 
+        function getDateOnlyStr(timestamp) {
+            const d = new Date(timestamp || Date.now());
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function setDateFilter(mode, btn) {
+            dateFilterMode = mode;
+            customDateVal = "";
+            document.getElementById("specificDatePicker").value = "";
+            document.querySelectorAll(".btn-date").forEach(b => b.classList.remove("active"));
+            if (btn) btn.classList.add("active");
+
+            const labelMap = {
+                'all': 'المجموع الكلي للمبيعات (سعر القطع فقط)',
+                'today': 'مبيعات اليوم (سعر القطع فقط)',
+                'yesterday': 'مبيعات البارحة (سعر القطع فقط)',
+                'week': 'مبيعات آخر 7 أيام (سعر القطع فقط)'
+            };
+            document.getElementById("statMainLabel").innerText = labelMap[mode] || 'المجموع (سعر القطع فقط)';
+            renderUI();
+        }
+
+        function onCustomDateChange(val) {
+            if (!val) return;
+            dateFilterMode = "custom";
+            customDateVal = val;
+            document.querySelectorAll(".btn-date").forEach(b => b.classList.remove("active"));
+            document.getElementById("statMainLabel").innerText = `مبيعات يوم (${val}) (سعر القطع فقط)`;
+            renderUI();
+        }
+
         function processImages(e) {
             const files = Array.from(e.target.files);
             files.forEach(file => {
@@ -261,10 +317,10 @@
             });
         }
 
-        // احتساب مبالغ القطع فقط (o.price) بدون أجور التوصيل
-        function refreshStats() {
+        // احتساب مبالغ المبيعات (سعر القطع فقط دون أجور التوصيل) للطلبات المصفاة حسب اليوم
+        function refreshStats(currentFilteredOrders) {
             let delivered = 0, shipping = 0, total = 0;
-            orders.forEach(o => {
+            currentFilteredOrders.forEach(o => {
                 const itemPrice = Number(o.price) || 0;
                 if (o.status === "واصل") delivered += itemPrice;
                 if (o.status === "بالطريق" || o.status === "قيد التجهيز") shipping += itemPrice;
@@ -280,340 +336,34 @@
             renderUI();
         }
 
+        function isOrderInSelectedDate(o) {
+            const t = o.timestamp || Date.now();
+            const orderDateStr = getDateOnlyStr(t);
+            const now = new Date();
+            const todayStr = getDateOnlyStr(now.getTime());
+
+            if (dateFilterMode === "all") return true;
+            if (dateFilterMode === "today") return orderDateStr === todayStr;
+            if (dateFilterMode === "yesterday") {
+                const yest = new Date(now);
+                yest.setDate(now.getDate() - 1);
+                return orderDateStr === getDateOnlyStr(yest.getTime());
+            }
+            if (dateFilterMode === "week") {
+                const diffTime = Math.abs(now.getTime() - t);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays <= 7;
+            }
+            if (dateFilterMode === "custom") {
+                return orderDateStr === customDateVal;
+            }
+            return true;
+        }
+
         function renderUI() {
             const list = document.getElementById("ordersList");
             list.innerHTML = "";
-            document.getElementById("totalBadge").innerText = orders.length;
 
-            let filtered = orders.filter(o => {
-                let matchesTab = true;
-                if (selectedTab === "داخل خانقين") matchesTab = (o.method === "داخل خانقين");
-                else if (selectedTab === "المحافظات") matchesTab = (o.method === "المحافظات");
-                else if (selectedTab === "بدون توصيل") matchesTab = (o.method === "بدون توصيل");
-                else if (selectedTab !== "all") matchesTab = (o.status === selectedTab);
-
-                if (!matchesTab) return false;
-
-                if (searchQuery) {
-                    const name = (o.name || "").toLowerCase();
-                    const phone = (o.phone || "").toLowerCase();
-                    const code = (o.code || "").toLowerCase();
-                    const addr = (o.addr || "").toLowerCase();
-                    const dateStr = (o.formattedDate || "").toLowerCase();
-                    return name.includes(searchQuery) || phone.includes(searchQuery) || code.includes(searchQuery) || addr.includes(searchQuery) || dateStr.includes(searchQuery);
-                }
-                return true;
-            });
-
-            if (filtered.length === 0) {
-                list.innerHTML = `<p style="text-align:center; color:#64748b; padding:25px;">لا توجد طلبات مسجلة</p>`;
-                refreshStats();
-                return;
-            }
-
-            filtered.forEach(o => {
-                let statusClass = "pending";
-                if (o.status === "بالطريق") statusClass = "shipping";
-                if (o.status === "واصل") statusClass = "delivered";
-                if (o.status === "راجع") statusClass = "returned";
-
-                let imgsHtml = "";
-                if (o.images && o.images.length > 0) {
-                    imgsHtml = `<div class="img-gallery">` +
-                        o.images.map(img => `<img src="${img}" onclick="viewImg('${img}')">`).join("") +
-                        `</div>`;
-                }
-
-                const displayDate = o.formattedDate || formatDateTime(o.timestamp);
-
-                list.innerHTML += `
-                    <div class="card ${statusClass}">
-                        <div class="card-header">
-                            <span class="cust-name">${o.name}</span>
-                            <div class="header-tags">
-                                <span class="order-date">🕒 ${displayDate}</span>
-                                <span class="item-code">كود: ${o.code || '---'}</span>
-                            </div>
-                        </div>
-                        <div class="card-details">
-                            📍 العنوان: ${o.addr || 'غير محدد'}<br>
-                            💵 السعر قبل التوصيل: <strong>${Number(o.price).toLocaleString()} د.ع</strong><br>
-                            🚚 أجور التوصيل: <strong>${Number(o.fee).toLocaleString()} د.ع</strong> (${o.method})<br>
-                            💰 <span style="color:#38bdf8; font-weight:bold;">السعر بعد التوصيل: ${Number(o.total).toLocaleString()} د.ع</span><br>
-                            الحالة: <strong>${o.status}</strong>
-                        </div>
-                        ${imgsHtml}
-                        ${o.notes ? `<div class="note-tag">📝 ${o.notes}</div>` : ''}
-                        <div class="action-btns">
-                            ${o.phone ? `<a href="tel:${o.phone}" class="btn-call">📞 اتصال</a>` : ''}
-                            <button class="btn-wa-cust" onclick="shareToCustomer('${o.id}')">👤 وصل الزبون</button>
-                            <button class="btn-wa-driver" onclick="shareToDriver('${o.id}')">🚚 وصل المندوب</button>
-                            <button class="btn-edit" onclick="openEditModal('${o.id}')">✏️ تعديل</button>
-                            <button class="btn-status-ship" onclick="updateStatus('${o.id}', 'بالطريق')">بالطريق</button>
-                            <button class="btn-status-done" onclick="updateStatus('${o.id}', 'واصل')">واصل</button>
-                            <button class="btn-status-back" onclick="updateStatus('${o.id}', 'راجع')">راجع</button>
-                            <button class="btn-del" onclick="deleteOrder('${o.id}')">حذف</button>
-                        </div>
-                    </div>
-                `;
-            });
-
-            refreshStats();
-        }
-
-        function createOrder() {
-            const name = document.getElementById("cName").value.trim();
-            const phone = document.getElementById("cPhone").value.trim();
-            const code = document.getElementById("cCode").value.trim();
-            const addr = document.getElementById("cAddr").value.trim();
-            const price = parseFloat(document.getElementById("cPrice").value) || 0;
-            const method = document.getElementById("cMethod").value;
-            const notes = document.getElementById("cNotes").value.trim();
-
-            if (!name) {
-                alert("يرجى إدخال اسم الزبون على الأقل");
-                return;
-            }
-
-            const fee = calcFee(method);
-            const total = price + fee;
-            const now = Date.now();
-
-            const newOrder = {
-                id: "id_" + now,
-                name, phone, 
-                code: code || '---', 
-                addr, price, fee, total, method, notes,
-                timestamp: now,
-                formattedDate: formatDateTime(now),
-                images: [...activeImages],
-                status: "قيد التجهيز"
-            };
-
-            orders.unshift(newOrder);
-            safeSaveLocal();
-            renderUI();
-
-            document.getElementById("cName").value = "";
-            document.getElementById("cPhone").value = "";
-            document.getElementById("cCode").value = "";
-            document.getElementById("cAddr").value = "";
-            document.getElementById("cPrice").value = "";
-            document.getElementById("cNotes").value = "";
-            document.getElementById("fileInput").value = "";
-            document.getElementById("previewArea").innerHTML = "";
-            activeImages = [];
-            recalc();
-
-            pushCloud();
-        }
-
-        function openEditModal(id) {
-            const o = orders.find(x => x.id === id);
-            if (!o) return;
-            document.getElementById("editId").value = o.id;
-            document.getElementById("editName").value = o.name || "";
-            document.getElementById("editPhone").value = o.phone || "";
-            document.getElementById("editCode").value = o.code || "";
-            document.getElementById("editAddr").value = o.addr || "";
-            document.getElementById("editPrice").value = o.price || 0;
-            document.getElementById("editMethod").value = o.method || "داخل خانقين";
-            document.getElementById("editNotes").value = o.notes || "";
-            document.getElementById("editModal").style.display = "flex";
-        }
-
-        function closeEditModal() {
-            document.getElementById("editModal").style.display = "none";
-        }
-
-        function saveEditedOrder() {
-            const id = document.getElementById("editId").value;
-            const name = document.getElementById("editName").value.trim();
-            const phone = document.getElementById("editPhone").value.trim();
-            const code = document.getElementById("editCode").value.trim();
-            const addr = document.getElementById("editAddr").value.trim();
-            const price = parseFloat(document.getElementById("editPrice").value) || 0;
-            const method = document.getElementById("editMethod").value;
-            const notes = document.getElementById("editNotes").value.trim();
-
-            if (!name) {
-                alert("يرجى كتابة اسم الزبون");
-                return;
-            }
-
-            const fee = calcFee(method);
-            const total = price + fee;
-
-            orders = orders.map(o => {
-                if (o.id === id) {
-                    return { ...o, name, phone, code, addr, price, fee, total, method, notes };
-                }
-                return o;
-            });
-
-            safeSaveLocal();
-            renderUI();
-            closeEditModal();
-            pushCloud();
-        }
-
-        function pushCloud() {
-            document.getElementById("netStatus").innerText = "⏳ جاري التحديث...";
-            fetch(FIREBASE_URL, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(orders)
-            }).then(() => {
-                document.getElementById("netStatus").innerText = "🟢 متزامن مع صديقك";
-            }).catch(() => {
-                document.getElementById("netStatus").innerText = "🟢 محفوظ على الهاتف";
-            });
-        }
-
-        function fetchOrders() {
-            fetch(FIREBASE_URL)
-                .then(res => res.json())
-                .then(data => {
-                    if (Array.isArray(data)) {
-                        orders = data;
-                        safeSaveLocal();
-                        renderUI();
-                        document.getElementById("netStatus").innerText = "🟢 متزامن مع صديقك";
-                    }
-                }).catch(() => {});
-        }
-
-        function updateStatus(id, newStatus) {
-            orders = orders.map(o => o.id === id ? { ...o, status: newStatus } : o);
-            safeSaveLocal();
-            renderUI();
-            pushCloud();
-        }
-
-        function deleteOrder(id) {
-            if (confirm("هل تريد حذف هذا الطلب؟")) {
-                orders = orders.filter(o => o.id !== id);
-                safeSaveLocal();
-                renderUI();
-                pushCloud();
-            }
-        }
-
-        function filterTab(tab, btn) {
-            selectedTab = tab;
-            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            renderUI();
-        }
-
-        function b64toBlobFile(b64Data, filename) {
-            const parts = b64Data.split(';base64,');
-            const contentType = parts[0].split(':')[1];
-            const raw = window.atob(parts[1]);
-            const rawLength = raw.length;
-            const uInt8Array = new Uint8Array(rawLength);
-            for (let i = 0; i < rawLength; ++i) {
-                uInt8Array[i] = raw.charCodeAt(i);
-            }
-            return new File([uInt8Array], filename, { type: contentType });
-        }
-
-        async function executeShare(msg, images, title) {
-            if (images && images.length > 0 && navigator.share) {
-                try {
-                    const files = images.map((img, i) => b64toBlobFile(img, `item_${i + 1}.jpg`));
-                    if (navigator.canShare && navigator.canShare({ files: files })) {
-                        await navigator.share({ files: files, title: title, text: msg });
-                        return;
-                    }
-                } catch(err) {}
-            }
-            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
-        }
-
-        function shareToCustomer(id) {
-            const o = orders.find(x => x.id === id);
-            if (!o) return;
-
-            let msg = `مرحباً بك زبوننا العزيز 🌸\n` +
-                      `تم تأكيد طلبك بنجاح، إليك تفاصيل الوصل:\n` +
-                      `━━━━━━━━━━━━━━\n` +
-                      `👤 *الاسم:* ${o.name}\n` +
-                      `🏷️ *كود القطعة:* ${o.code || '---'}\n` +
-                      `📍 *عنوان التوصيل:* ${o.addr || 'غير محدد'}\n` +
-                      `💵 *سعر الطلب:* ${Number(o.price).toLocaleString()} دينار\n` +
-                      `🚚 *أجور التوصيل:* ${Number(o.fee).toLocaleString()} دينار\n` +
-                      `💰 *المبلغ الصافي المطلوب عند الاستلام:* ${Number(o.total).toLocaleString()} دينار\n`;
-            if (o.notes) msg += `📝 *ملاحظة:* ${o.notes}\n`;
-            msg += `━━━━━━━━━━━━━━\nنشكرك على ثقتك بنا ونتمنى لك يوماً سعيداً ❤️`;
-
-            executeShare(msg, o.images, 'وصل طلبك');
-        }
-
-        function shareToDriver(id) {
-            const o = orders.find(x => x.id === id);
-            if (!o) return;
-
-            let msg = `🚚 *مهمة توصيل جديدة* 📦\n` +
-                      `━━━━━━━━━━━━━━\n` +
-                      `👤 *الزبون:* ${o.name}\n` +
-                      `📞 *رقم الهاتف:* ${o.phone || 'غير مسجل'}\n` +
-                      `📍 *العنوان:* ${o.addr || 'غير محدد'}\n` +
-                      `🏷️ *كود القطعة:* ${o.code || '---'}\n` +
-                      `💰 *المبلغ المطلوب قبضه من الزبون:* ${Number(o.total).toLocaleString()} دينار\n` +
-                      `🚚 *نوع الشحنة:* ${o.method}\n`;
-            if (o.notes) msg += `⚠️ *ملاحظات التوصيل:* ${o.notes}\n`;
-            msg += `━━━━━━━━━━━━━━\nيرجى التواصل مع الزبون قبل التوجه إليه.`;
-
-            executeShare(msg, o.images, 'مهمة توصيل');
-        }
-
-        function exportToExcel() {
-            if (orders.length === 0) {
-                alert("لا توجد طلبات لتصديرها حالياً!");
-                return;
-            }
-
-            let csvContent = "\uFEFF";
-            csvContent += "تاريخ الطلب,اسم الزبون,رقم الهاتف,كود القطعة,العنوان,طريقة التوصيل,السعر قبل التوصيل,أجور التوصيل,المجموع الكلي,الحالة,ملاحظات\n";
-
-            orders.forEach(o => {
-                const date = o.formattedDate || formatDateTime(o.timestamp);
-                const row = [
-                    `"${date}"`,
-                    `"${o.name || ''}"`,
-                    `"${o.phone || ''}"`,
-                    `"${o.code || ''}"`,
-                    `"${o.addr || ''}"`,
-                    `"${o.method || ''}"`,
-                    `"${o.price || 0}"`,
-                    `"${o.fee || 0}"`,
-                    `"${o.total || 0}"`,
-                    `"${o.status || ''}"`,
-                    `"${(o.notes || '').replace(/"/g, '""')}"`
-                ];
-                csvContent += row.join(",") + "\n";
-            });
-
-            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", `تقرير_الطلبات.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function viewImg(src) {
-            document.getElementById("modalViewer").src = src;
-            document.getElementById("modal").style.display = "flex";
-        }
-
-        recalc();
-        renderUI();
-        fetchOrders();
-        setInterval(fetchOrders, 4000);
-    </script>
-</body>
-</html>
+            // تصفية حسب التاريخ أولاً لحساب الأرباح بدقة
+            let dateFiltered = orders.filter(isOrderInSelectedDate);
+            refreshStats(dateFiltered
