@@ -6,55 +6,55 @@
     <title>نظام إدارة الطلبات</title>
     <style>
         * { box-sizing: border-box; font-family: Tahoma, Arial, sans-serif; margin: 0; padding: 0; }
-        body { background: #0f172a; padding: 12px; color: #f8fafc; direction: rtl; }
+        body { background: #0f172a; padding: 10px 10px 80px 10px; color: #f8fafc; direction: rtl; }
 
-        .header-bar { background: #1e293b; border: 1px solid #10b981; padding: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .status-badge { font-size: 13px; font-weight: bold; color: #34d399; }
+        .header-bar { background: #1e293b; border: 1px solid #10b981; padding: 8px 12px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .status-badge { font-size: 12px; font-weight: bold; color: #34d399; }
         .header-actions { display: flex; gap: 6px; }
-        .btn-reload { background: #0284c7; color: white; border: none; padding: 7px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
-        .btn-export { background: #10b981; color: white; border: none; padding: 7px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-reload { background: #0284c7; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
+        .btn-export { background: #10b981; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
 
-        .date-filter-bar { background: #1e293b; padding: 10px; border-radius: 10px; border: 1px solid #38bdf8; margin-bottom: 12px; }
-        .date-filter-title { font-size: 12px; font-weight: bold; color: #38bdf8; margin-bottom: 6px; }
-        .date-buttons { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 8px; }
-        .btn-date { background: #334155; color: #cbd5e1; border: 0; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+        /* شريط المبالغ المدمج الأنيق */
+        .stats-strip { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 8px 10px; display: flex; justify-content: space-around; align-items: center; margin-bottom: 10px; text-align: center; }
+        .stat-item { flex: 1; }
+        .stat-item:not(:last-child) { border-left: 1px solid #334155; }
+        .stat-title { font-size: 10px; color: #94a3b8; margin-bottom: 2px; }
+        .stat-val { font-size: 13px; font-weight: bold; }
+
+        /* شريط فلترة التواريخ */
+        .date-filter-bar { background: #1e293b; padding: 8px 10px; border-radius: 10px; border: 1px solid #38bdf8; margin-bottom: 10px; }
+        .date-buttons { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 6px; }
+        .btn-date { background: #334155; color: #cbd5e1; border: 0; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; }
         .btn-date.active { background: #0284c7; color: #fff; }
-        .custom-date-input { width: 100%; padding: 8px; background: #0f172a; border: 1px solid #475569; border-radius: 6px; color: #fff; font-size: 13px; outline: none; }
+        .custom-date-input { width: 100%; padding: 6px; background: #0f172a; border: 1px solid #475569; border-radius: 6px; color: #fff; font-size: 12px; outline: none; }
 
-        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-        .stat-box { background: #1e293b; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #334155; }
-        .stat-box.full { grid-column: span 2; background: #0284c7; border: none; }
-        .stat-title { font-size: 11px; opacity: 0.9; }
-        .stat-val { font-size: 15px; font-weight: bold; margin-top: 3px; }
-
-        .box { background: #1e293b; border-radius: 10px; padding: 14px; border: 1px solid #334155; margin-bottom: 12px; }
-        input, select, textarea { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #475569; border-radius: 8px; font-size: 14px; background: #0f172a; color: #fff; }
-        textarea { height: 50px; resize: vertical; }
-
-        .search-box { width: 100%; padding: 11px 14px; border: 2px solid #38bdf8; border-radius: 8px; font-size: 14px; background: #1e293b; color: #fff; margin-bottom: 12px; outline: none; }
+        .search-box { width: 100%; padding: 10px 12px; border: 2px solid #38bdf8; border-radius: 8px; font-size: 13px; background: #1e293b; color: #fff; margin-bottom: 10px; outline: none; }
         .search-box::placeholder { color: #94a3b8; }
 
-        .calc-box { background: #0f172a; border: 1px solid #38bdf8; padding: 10px; border-radius: 8px; font-size: 13px; color: #38bdf8; text-align: center; font-weight: bold; margin-bottom: 8px; line-height: 1.6; }
-
-        .upload-btn { display: block; background: #334155; padding: 10px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px dashed #38bdf8; margin-bottom: 8px; color: #38bdf8; }
-        .previews { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; }
-        .thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #38bdf8; flex-shrink: 0; }
-
-        .btn-add { background: #2563eb; color: #fff; border: 0; width: 100%; padding: 13px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
-
-        .tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 10px; }
-        .tab-btn { background: #334155; color: #cbd5e1; border: 0; padding: 7px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+        .tabs { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 10px; }
+        .tab-btn { background: #334155; color: #cbd5e1; border: 0; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; }
         .tab-btn.active { background: #38bdf8; color: #0f172a; }
 
-        .card { background: #1e293b; border-radius: 10px; padding: 12px; margin-bottom: 10px; border: 1px solid #334155; }
-        .card.pending { border-right: 5px solid #f59e0b; }
-        .card.shipping { border-right: 5px solid #38bdf8; }
-        .card.delivered { border-right: 5px solid #10b981; }
-        .card.returned { border-right: 5px solid #ef4444; }
+        /* كارت الطلب */
+        .card { background: #1e293b; border-radius: 10px; padding: 12px; margin-bottom: 10px; border: 1px solid #334155; position: relative; }
+        .card.pending { border-right: 6px solid #f59e0b; }
+        .card.shipping { border-right: 6px solid #38bdf8; }
+        .card.delivered { border-right: 6px solid #10b981; }
+        .card.postponed { border-right: 6px solid #a855f7; }
+        .card.returned { border-right: 6px solid #ef4444; }
 
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-        .cust-name { font-size: 15px; font-weight: bold; color: #fff; }
+        .cust-name { font-size: 16px; font-weight: bold; color: #fff; }
         .order-date { font-size: 11px; color: #94a3b8; background: #0f172a; padding: 2px 6px; border-radius: 4px; }
+
+        /* شارة الحالة بحجم كبير وبارز جداً */
+        .status-banner { display: block; text-align: center; padding: 6px; border-radius: 6px; font-size: 14px; font-weight: 900; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .st-pending { background: #451a03; color: #fbbf24; border: 1px solid #d97706; }
+        .st-shipping { background: #082f49; color: #38bdf8; border: 1px solid #0284c7; }
+        .st-delivered { background: #064e3b; color: #34d399; border: 1px solid #059669; }
+        .st-postponed { background: #3b0764; color: #d8b4fe; border: 1px solid #9333ea; }
+        .st-returned { background: #450a0a; color: #f87171; border: 1px solid #dc2626; }
+
         .card-details { font-size: 13px; color: #cbd5e1; line-height: 1.7; margin-bottom: 8px; }
 
         .img-gallery { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; }
@@ -70,12 +70,24 @@
         .btn-edit { background: #f59e0b; color: #1e293b; }
         .btn-status-ship { background: #0284c7; color: #fff; }
         .btn-status-done { background: #059669; color: #fff; }
+        .btn-status-post { background: #9333ea; color: #fff; }
         .btn-status-back { background: #dc2626; color: #fff; }
         .btn-del { background: #7f1d1d; color: #fca5a5; margin-right: auto; }
 
+        /* الزر العائم في الأسفل لإضافة طلب */
+        .fab-add { position: fixed; bottom: 18px; left: 18px; background: #2563eb; color: #fff; border: none; border-radius: 50px; padding: 14px 22px; font-size: 15px; font-weight: bold; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.5); cursor: pointer; z-index: 999; display: flex; align-items: center; gap: 6px; }
+
+        /* نوافذ منبثقة */
         .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; padding: 12px; }
         .modal-content { background: #1e293b; border-radius: 12px; padding: 16px; width: 100%; max-width: 420px; border: 1px solid #475569; max-height: 90vh; overflow-y: auto; }
         .modal-title { font-size: 16px; font-weight: bold; margin-bottom: 12px; color: #38bdf8; text-align: center; }
+        input, select, textarea { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #475569; border-radius: 8px; font-size: 14px; background: #0f172a; color: #fff; }
+        textarea { height: 50px; resize: vertical; }
+        .calc-box { background: #0f172a; border: 1px solid #38bdf8; padding: 8px; border-radius: 8px; font-size: 12px; color: #38bdf8; text-align: center; font-weight: bold; margin-bottom: 8px; line-height: 1.5; }
+        .upload-btn { display: block; background: #334155; padding: 10px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px dashed #38bdf8; margin-bottom: 8px; color: #38bdf8; }
+        .previews { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; }
+        .thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #38bdf8; flex-shrink: 0; }
+        .btn-submit { background: #2563eb; color: #fff; border: 0; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; }
         .modal-close { background: #475569; color: #fff; border: 0; padding: 10px; width: 100%; border-radius: 8px; font-weight: bold; margin-top: 6px; cursor: pointer; }
         .img-modal img { max-width: 95%; max-height: 90%; border-radius: 8px; }
     </style>
@@ -90,9 +102,24 @@
         </div>
     </div>
 
-    <!-- تصفية الأيام -->
+    <!-- شريط المبالغ المالي المدمج في سطر واحد -->
+    <div class="stats-strip">
+        <div class="stat-item">
+            <div class="stat-title">الواصل (قطع فقط)</div>
+            <div class="stat-val" style="color:#34d399;" id="boxDelivered">0 د.ع</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-title">بالطريق (قطع فقط)</div>
+            <div class="stat-val" style="color:#38bdf8;" id="boxShipping">0 د.ع</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-title" id="statMainLabel">مبيعات اليوم (قطع)</div>
+            <div class="stat-val" style="color:#fde047;" id="boxTotal">0 د.ع</div>
+        </div>
+    </div>
+
+    <!-- تصفية الأيام والفترات -->
     <div class="date-filter-bar">
-        <div class="date-filter-title">📅 الفترة المحددة:</div>
         <div class="date-buttons">
             <button class="btn-date active" id="btnDateToday" onclick="setDateFilter('today', this)">اليوم</button>
             <button class="btn-date" onclick="setDateFilter('yesterday', this)">البارحة</button>
@@ -102,52 +129,9 @@
         <input type="date" id="specificDatePicker" class="custom-date-input" onchange="onCustomDateChange(this.value)">
     </div>
 
-    <!-- الصناديق المالية لحساب سعر القطع الصافي -->
-    <div class="stats">
-        <div class="stat-box">
-            <div class="stat-title">الواصل اليوم (قطع فقط)</div>
-            <div class="stat-val" style="color:#34d399;" id="boxDelivered">0 د.ع</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-title">بالطريق اليوم (قطع فقط)</div>
-            <div class="stat-val" style="color:#38bdf8;" id="boxShipping">0 د.ع</div>
-        </div>
-        <div class="stat-box full">
-            <div class="stat-title" id="statMainLabel">مبيعات اليوم (سعر القطع فقط بدون توصيل)</div>
-            <div class="stat-val" id="boxTotal">0 د.ع</div>
-        </div>
-    </div>
-
     <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث بالاسم، الهاتف، العنوان..." oninput="handleSearch()">
 
-    <!-- نموذج إضافة طلب مبسط بدون كود القطعة -->
-    <div class="box">
-        <h3 style="margin-bottom: 10px; font-size: 15px;">إضافة طلب جديد 📦</h3>
-        <input type="text" id="cName" placeholder="اسم الزبون (مطلوب)">
-        <input type="tel" id="cPhone" placeholder="رقم الهاتف">
-        <input type="text" id="cAddr" placeholder="العنوان بالتفصيل">
-        <input type="number" id="cPrice" placeholder="سعر القطع (دينار)" oninput="recalc()">
-        
-        <select id="cMethod" onchange="recalc()">
-            <option value="داخل خانقين">توصيل: داخل خانقين (+2,000 د.ع)</option>
-            <option value="المحافظات">توصيل: خارج خانقين / المحافظات (+5,000 د.ع)</option>
-            <option value="بدون توصيل">بدون توصيل (استلام مباشر 0 د.ع)</option>
-        </select>
-
-        <div id="calcView" class="calc-box">
-            السعر قبل التوصيل: 0 د.ع | التوصيل: 2,000 د.ع<br>
-            <strong>السعر بعد التوصيل: 2,000 د.ع</strong>
-        </div>
-
-        <textarea id="cNotes" placeholder="ملاحظات إضافية (اختياري)"></textarea>
-
-        <label class="upload-btn" for="fileInput">📷 اختيار صور المنتجات (يمكنك اختيار عدة صور)</label>
-        <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="processImages(event)">
-        <div id="previewArea" class="previews"></div>
-
-        <button type="button" class="btn-add" onclick="createOrder()">تثبيت الطلب</button>
-    </div>
-
+    <!-- تبويبات التصفية مع إضافة تبويبة "مؤجل" -->
     <div class="tabs">
         <button class="tab-btn active" onclick="filterTab('all', this)">الكل (<span id="totalBadge">0</span>)</button>
         <button class="tab-btn" onclick="filterTab('داخل خانقين', this)">داخل خانقين</button>
@@ -155,12 +139,47 @@
         <button class="tab-btn" onclick="filterTab('بدون توصيل', this)">بدون توصيل</button>
         <button class="tab-btn" onclick="filterTab('بالطريق', this)">🚚 بالطريق</button>
         <button class="tab-btn" onclick="filterTab('واصل', this)">✅ واصل</button>
+        <button class="tab-btn" onclick="filterTab('مؤجل', this)">⏳ مؤجل</button>
         <button class="tab-btn" onclick="filterTab('راجع', this)">❌ راجع</button>
     </div>
 
     <div id="ordersList"></div>
 
-    <!-- نافذة تعديل الطلب مبسطة بدون كود القطعة -->
+    <!-- الزر العائم في الأسفل -->
+    <button class="fab-add" onclick="openAddModal()">➕ إضافة طلب جديد</button>
+
+    <!-- نافذة منبثقة لإضافة طلب جديد -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">📦 إضافة طلب جديد</div>
+            <input type="text" id="cName" placeholder="اسم الزبون (مطلوب)">
+            <input type="tel" id="cPhone" placeholder="رقم الهاتف">
+            <input type="text" id="cAddr" placeholder="العنوان بالتفصيل">
+            <input type="number" id="cPrice" placeholder="سعر القطع (دينار)" oninput="recalc()">
+            
+            <select id="cMethod" onchange="recalc()">
+                <option value="داخل خانقين">توصيل: داخل خانقين (+2,000 د.ع)</option>
+                <option value="المحافظات">توصيل: خارج خانقين / المحافظات (+5,000 د.ع)</option>
+                <option value="بدون توصيل">بدون توصيل (استلام مباشر 0 د.ع)</option>
+            </select>
+
+            <div id="calcView" class="calc-box">
+                السعر قبل التوصيل: 0 د.ع | التوصيل: 2,000 د.ع<br>
+                <strong>السعر بعد التوصيل: 2,000 د.ع</strong>
+            </div>
+
+            <textarea id="cNotes" placeholder="ملاحظات إضافية (اختياري)"></textarea>
+
+            <label class="upload-btn" for="fileInput">📷 اختيار صور المنتجات (عدة صور)</label>
+            <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="processImages(event)">
+            <div id="previewArea" class="previews"></div>
+
+            <button type="button" class="btn-submit" onclick="createOrder()">تثبيت الطلب</button>
+            <button class="modal-close" onclick="closeAddModal()">إلغاء</button>
+        </div>
+    </div>
+
+    <!-- نافذة تعديل الطلب -->
     <div id="editModal" class="modal">
         <div class="modal-content">
             <div class="modal-title">✏️ تعديل بيانات الطلب</div>
@@ -181,7 +200,7 @@
             </select>
             <label style="font-size:12px; color:#94a3b8;">ملاحظات:</label>
             <textarea id="editNotes"></textarea>
-            <button class="btn-add" style="background:#059669; margin-top:8px;" onclick="saveEditedOrder()">💾 حفظ التعديلات</button>
+            <button class="btn-submit" style="background:#059669; margin-top:8px;" onclick="saveEditedOrder()">💾 حفظ التعديلات</button>
             <button class="modal-close" onclick="closeEditModal()">إلغاء</button>
         </div>
     </div>
@@ -288,12 +307,12 @@
             if (btn) btn.classList.add("active");
 
             const labelMap = {
-                'today': 'مبيعات اليوم (سعر القطع فقط بدون توصيل)',
-                'yesterday': 'مبيعات البارحة (سعر القطع فقط)',
-                'week': 'مبيعات آخر 7 أيام (سعر القطع فقط)',
-                'all': 'المجموع الكلي لكافة الأوقات (سعر القطع فقط)'
+                'today': 'مبيعات اليوم (قطع)',
+                'yesterday': 'مبيعات البارحة (قطع)',
+                'week': 'مبيعات 7 أيام (قطع)',
+                'all': 'كافة المبيعات (قطع)'
             };
-            document.getElementById("statMainLabel").innerText = labelMap[mode] || 'المجموع (سعر القطع فقط)';
+            document.getElementById("statMainLabel").innerText = labelMap[mode] || 'المبيعات (قطع)';
             renderUI();
         }
 
@@ -302,7 +321,7 @@
             dateFilterMode = "custom";
             customDateVal = val;
             document.querySelectorAll(".btn-date").forEach(b => b.classList.remove("active"));
-            document.getElementById("statMainLabel").innerText = `مبيعات يوم (${val}) (سعر القطع فقط)`;
+            document.getElementById("statMainLabel").innerText = `مبيعات (${val})`;
             renderUI();
         }
 
@@ -344,7 +363,7 @@
                 const itemPrice = Number(o.price) || 0;
                 if (o.status === "واصل" || o.status === "تم التسليم") delivered += itemPrice;
                 if (o.status === "بالطريق" || o.status === "قيد التجهيز") shipping += itemPrice;
-                if (o.status !== "راجع") total += itemPrice;
+                if (o.status !== "راجع" && o.status !== "مؤجل") total += itemPrice;
             });
             document.getElementById("boxDelivered").innerText = delivered.toLocaleString() + " د.ع";
             document.getElementById("boxShipping").innerText = shipping.toLocaleString() + " د.ع";
@@ -393,7 +412,10 @@
                 if (selectedTab === "داخل خانقين") matchesTab = m.includes("خانقين");
                 else if (selectedTab === "المحافظات") matchesTab = (m.includes("المحافظات") || m.includes("شركة"));
                 else if (selectedTab === "بدون توصيل") matchesTab = m.includes("بدون توصيل");
-                else if (selectedTab !== "all") matchesTab = (o.status === selectedTab);
+                else if (selectedTab !== "all") {
+                    if (selectedTab === "واصل") matchesTab = (o.status === "واصل" || o.status === "تم التسليم");
+                    else matchesTab = (o.status === selectedTab);
+                }
 
                 if (!matchesTab) return false;
 
@@ -415,9 +437,13 @@
 
             filtered.forEach(o => {
                 let statusClass = "pending";
-                if (o.status === "بالطريق") statusClass = "shipping";
-                if (o.status === "واصل" || o.status === "تم التسليم") statusClass = "delivered";
-                if (o.status === "راجع") statusClass = "returned";
+                let statusBannerClass = "st-pending";
+                let currentStatus = o.status || "قيد التجهيز";
+
+                if (currentStatus === "بالطريق") { statusClass = "shipping"; statusBannerClass = "st-shipping"; }
+                if (currentStatus === "واصل" || currentStatus === "تم التسليم") { statusClass = "delivered"; statusBannerClass = "st-delivered"; currentStatus = "واصل"; }
+                if (currentStatus === "مؤجل") { statusClass = "postponed"; statusBannerClass = "st-postponed"; }
+                if (currentStatus === "راجع") { statusClass = "returned"; statusBannerClass = "st-returned"; }
 
                 let imgs = [];
                 if (Array.isArray(o.images)) imgs = o.images;
@@ -442,12 +468,17 @@
                             <span class="cust-name">${o.name}</span>
                             <span class="order-date">🕒 ${displayDate}</span>
                         </div>
+                        
+                        <!-- إظهار حالة الطلب بشكل كبير وواضح في أعلى الكارت -->
+                        <div class="status-banner ${statusBannerClass}">
+                            الحالة: ${currentStatus}
+                        </div>
+
                         <div class="card-details">
                             📍 العنوان: ${o.addr || 'غير محدد'}<br>
                             💵 السعر قبل التوصيل: <strong>${itemPrice.toLocaleString()} د.ع</strong><br>
                             🚚 أجور التوصيل: <strong>${fee.toLocaleString()} د.ع</strong> (${method})<br>
-                            💰 <span style="color:#38bdf8; font-weight:bold;">السعر بعد التوصيل: ${total.toLocaleString()} د.ع</span><br>
-                            الحالة: <strong>${o.status}</strong>
+                            💰 <span style="color:#38bdf8; font-weight:bold;">السعر بعد التوصيل: ${total.toLocaleString()} د.ع</span>
                         </div>
                         ${imgsHtml}
                         ${o.notes ? `<div class="note-tag">📝 ${o.notes}</div>` : ''}
@@ -458,12 +489,21 @@
                             <button class="btn-edit" onclick="openEditModal('${o.id}')">✏️ تعديل</button>
                             <button class="btn-status-ship" onclick="updateStatus('${o.id}', 'بالطريق')">بالطريق</button>
                             <button class="btn-status-done" onclick="updateStatus('${o.id}', 'واصل')">واصل</button>
+                            <button class="btn-status-post" onclick="updateStatus('${o.id}', 'مؤجل')">مؤجل</button>
                             <button class="btn-status-back" onclick="updateStatus('${o.id}', 'راجع')">راجع</button>
                             <button class="btn-del" onclick="deleteOrder('${o.id}')">حذف</button>
                         </div>
                     </div>
                 `;
             });
+        }
+
+        function openAddModal() {
+            document.getElementById("addModal").style.display = "flex";
+        }
+
+        function closeAddModal() {
+            document.getElementById("addModal").style.display = "none";
         }
 
         function createOrder() {
@@ -496,6 +536,7 @@
             orders.unshift(newOrder);
             safeSaveLocal();
             renderUI();
+            closeAddModal();
 
             document.getElementById("cName").value = "";
             document.getElementById("cPhone").value = "";
