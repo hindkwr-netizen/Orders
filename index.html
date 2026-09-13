@@ -3,209 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام إدارة الطلبات</title>
+    <title>إدارة الطلبات السريعة</title>
     <style>
         * { box-sizing: border-box; font-family: Tahoma, Arial, sans-serif; margin: 0; padding: 0; }
-        body { background: #0f172a; padding: 10px 10px 80px 10px; color: #f8fafc; direction: rtl; }
+        body { background: #0f172a; padding: 10px 10px 85px 10px; color: #f8fafc; direction: rtl; }
 
-        .header-bar { background: #1e293b; border: 1px solid #10b981; padding: 8px 12px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .status-badge { font-size: 12px; font-weight: bold; color: #34d399; }
-        .header-actions { display: flex; gap: 6px; }
-        .btn-reload { background: #0284c7; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
-        .btn-export { background: #10b981; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
+        /* شريط علوي بسيط */
+        .header-bar { background: #1e293b; border: 1px solid #334155; padding: 8px 12px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .net-badge { font-size: 11px; font-weight: bold; color: #34d399; }
+        .btn-sync { background: #0284c7; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
 
-        /* شريط المبالغ المدمج */
-        .stats-strip { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 8px 10px; display: flex; justify-content: space-around; align-items: center; margin-bottom: 10px; text-align: center; }
-        .stat-item { flex: 1; }
-        .stat-item:not(:last-child) { border-left: 1px solid #334155; }
-        .stat-title { font-size: 10px; color: #94a3b8; margin-bottom: 2px; }
-        .stat-val { font-size: 13px; font-weight: bold; }
+        /* صندوق الكاش المستلم اليوم */
+        .cash-box { background: linear-gradient(135deg, #065f46, #047857); border: 1px solid #10b981; border-radius: 10px; padding: 10px 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .cash-title { font-size: 11px; color: #a7f3d0; font-weight: bold; }
+        .cash-val { font-size: 16px; font-weight: 900; color: #fff; }
+        .cash-count { font-size: 11px; color: #d1fae5; background: rgba(0,0,0,0.25); padding: 3px 8px; border-radius: 12px; }
 
-        /* شريط فلترة التواريخ */
-        .date-filter-bar { background: #1e293b; padding: 8px 10px; border-radius: 10px; border: 1px solid #38bdf8; margin-bottom: 10px; }
-        .date-buttons { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 6px; }
-        .btn-date { background: #334155; color: #cbd5e1; border: 0; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; }
-        .btn-date.active { background: #0284c7; color: #fff; }
-        .custom-date-input { width: 100%; padding: 6px; background: #0f172a; border: 1px solid #475569; border-radius: 6px; color: #fff; font-size: 12px; outline: none; }
+        /* أزرار التبويبات الرئيسية (النشطة vs الأرشيف) */
+        .main-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+        .main-tab-btn { flex: 1; padding: 9px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #94a3b8; font-weight: bold; font-size: 12px; cursor: pointer; text-align: center; }
+        .main-tab-btn.active { background: #0284c7; color: #fff; border-color: #38bdf8; }
 
-        .search-box { width: 100%; padding: 10px 12px; border: 2px solid #38bdf8; border-radius: 8px; font-size: 13px; background: #1e293b; color: #fff; margin-bottom: 10px; outline: none; }
-        .search-box::placeholder { color: #94a3b8; }
-
-        .tabs { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 10px; }
-        .tab-btn { background: #334155; color: #cbd5e1; border: 0; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; }
-        .tab-btn.active { background: #38bdf8; color: #0f172a; }
+        /* شريط البحث */
+        .search-box { width: 100%; padding: 10px 12px; border: 1px solid #475569; border-radius: 8px; font-size: 13px; background: #1e293b; color: #fff; margin-bottom: 10px; outline: none; }
 
         /* كارت الطلب */
-        .card { background: #1e293b; border-radius: 10px; padding: 12px; margin-bottom: 10px; border: 1px solid #334155; position: relative; }
-        .card.pending { border-right: 6px solid #f59e0b; }
-        .card.shipping { border-right: 6px solid #38bdf8; }
-        .card.delivered { border-right: 6px solid #10b981; }
-        .card.postponed { border-right: 6px solid #a855f7; }
-        .card.returned { border-right: 6px solid #ef4444; }
+        .card { background: #1e293b; border-radius: 10px; padding: 12px; margin-bottom: 10px; border: 1px solid #334155; border-right: 6px solid #38bdf8; }
+        .card.delivered { border-right-color: #10b981; }
+        .card.returned { border-right-color: #ef4444; opacity: 0.7; }
+        .card.postponed { border-right-color: #a855f7; }
 
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
         .cust-name { font-size: 16px; font-weight: bold; color: #fff; }
-        .order-date { font-size: 11px; color: #94a3b8; background: #0f172a; padding: 2px 6px; border-radius: 4px; }
-
-        .status-banner { display: block; text-align: center; padding: 6px; border-radius: 6px; font-size: 14px; font-weight: 900; letter-spacing: 0.5px; margin-bottom: 8px; }
-        .st-pending { background: #451a03; color: #fbbf24; border: 1px solid #d97706; }
-        .st-shipping { background: #082f49; color: #38bdf8; border: 1px solid #0284c7; }
-        .st-delivered { background: #064e3b; color: #34d399; border: 1px solid #059669; }
-        .st-postponed { background: #3b0764; color: #d8b4fe; border: 1px solid #9333ea; }
-        .st-returned { background: #450a0a; color: #f87171; border: 1px solid #dc2626; }
+        .badge-status { font-size: 11px; padding: 3px 7px; border-radius: 6px; font-weight: bold; background: #0f172a; }
 
         .card-details { font-size: 13px; color: #cbd5e1; line-height: 1.7; margin-bottom: 8px; }
+        .price-highlight { color: #38bdf8; font-size: 15px; font-weight: 900; }
 
         .img-gallery { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; }
-        .img-gallery img { width: 75px; height: 75px; object-fit: cover; border-radius: 6px; border: 1px solid #475569; cursor: pointer; flex-shrink: 0; }
+        .img-gallery img { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid #475569; cursor: pointer; flex-shrink: 0; }
 
-        .note-tag { background: #334155; border: 1px dashed #f59e0b; padding: 6px; border-radius: 6px; font-size: 12px; color: #fde047; margin-bottom: 8px; }
-
-        .action-btns { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
-        .action-btns button, .action-btns a { border: 0; padding: 6px 9px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; text-decoration: none; }
+        /* أزرار العمليات السريعة لأخوك */
+        .action-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+        .action-row button, .action-row a { border: 0; padding: 7px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; text-decoration: none; }
         .btn-call { background: #22c55e; color: #fff; }
-        .btn-wa-cust { background: #25d366; color: #fff; }
-        .btn-wa-driver { background: #0284c7; color: #fff; }
-        .btn-edit { background: #f59e0b; color: #1e293b; }
-        .btn-status-ship { background: #0284c7; color: #fff; }
-        .btn-status-done { background: #059669; color: #fff; }
-        .btn-status-post { background: #9333ea; color: #fff; }
-        .btn-status-back { background: #dc2626; color: #fff; }
-        .btn-del { background: #7f1d1d; color: #fca5a5; margin-right: auto; }
+        .btn-share { background: #0284c7; color: #fff; }
+        .btn-done { background: #059669; color: #fff; }
+        .btn-post { background: #9333ea; color: #fff; }
+        .btn-ret { background: #dc2626; color: #fff; }
+        .btn-edit { background: #f59e0b; color: #1e293b; margin-right: auto; }
 
-        .fab-add { position: fixed; bottom: 18px; left: 18px; background: #2563eb; color: #fff; border: none; border-radius: 50px; padding: 14px 22px; font-size: 15px; font-weight: bold; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.5); cursor: pointer; z-index: 999; display: flex; align-items: center; gap: 6px; }
+        /* زر الإضافة العائم */
+        .fab-add { position: fixed; bottom: 18px; left: 18px; background: #2563eb; color: #fff; border: none; border-radius: 50px; padding: 13px 20px; font-size: 14px; font-weight: bold; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.5); cursor: pointer; z-index: 999; }
 
-        /* نوافذ منبثقة */
+        /* النوافذ المنبثقة */
         .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; padding: 12px; }
-        .modal-content { background: #1e293b; border-radius: 12px; padding: 16px; width: 100%; max-width: 420px; border: 1px solid #475569; max-height: 90vh; overflow-y: auto; }
-        .modal-title { font-size: 16px; font-weight: bold; margin-bottom: 12px; color: #38bdf8; text-align: center; }
+        .modal-content { background: #1e293b; border-radius: 12px; padding: 16px; width: 100%; max-width: 400px; border: 1px solid #475569; max-height: 90vh; overflow-y: auto; }
+        .modal-title { font-size: 15px; font-weight: bold; margin-bottom: 12px; color: #38bdf8; text-align: center; }
         input, select, textarea { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #475569; border-radius: 8px; font-size: 14px; background: #0f172a; color: #fff; }
-        textarea { height: 50px; resize: vertical; }
-        .calc-box { background: #0f172a; border: 1px solid #38bdf8; padding: 8px; border-radius: 8px; font-size: 12px; color: #38bdf8; text-align: center; font-weight: bold; margin-bottom: 8px; line-height: 1.5; }
-        .upload-btn { display: block; background: #334155; padding: 10px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px dashed #38bdf8; margin-bottom: 8px; color: #38bdf8; }
+        textarea { height: 45px; }
+        .calc-preview { background: #0f172a; border: 1px solid #38bdf8; padding: 6px; border-radius: 6px; font-size: 12px; color: #38bdf8; text-align: center; font-weight: bold; margin-bottom: 8px; }
+        .upload-label { display: block; background: #334155; padding: 9px; border-radius: 8px; text-align: center; font-size: 12px; font-weight: bold; cursor: pointer; border: 1px dashed #38bdf8; margin-bottom: 8px; color: #38bdf8; }
         .previews { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; }
-        .thumb-wrapper { position: relative; display: inline-block; flex-shrink: 0; }
-        .thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #38bdf8; }
-        .thumb-remove-btn { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; font-weight: bold; cursor: pointer; line-height: 18px; text-align: center; }
-
-        .btn-submit { background: #2563eb; color: #fff; border: 0; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; }
-        .modal-close { background: #475569; color: #fff; border: 0; padding: 10px; width: 100%; border-radius: 8px; font-weight: bold; margin-top: 6px; cursor: pointer; }
+        .thumb-wrap { position: relative; flex-shrink: 0; }
+        .thumb-wrap img { width: 55px; height: 55px; object-fit: cover; border-radius: 6px; }
+        .thumb-del { position: absolute; top: -4px; right: -4px; background: #ef4444; color: #fff; border: 0; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; cursor: pointer; }
+        .btn-confirm { background: #2563eb; color: #fff; border: 0; width: 100%; padding: 11px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; }
+        .btn-cancel { background: #475569; color: #fff; border: 0; width: 100%; padding: 9px; border-radius: 8px; font-weight: bold; margin-top: 6px; cursor: pointer; }
         .img-modal img { max-width: 95%; max-height: 90%; border-radius: 8px; }
     </style>
 </head>
 <body>
 
     <div class="header-bar">
-        <span class="status-badge" id="netStatus">🟢 متصل ومحدث فورياً</span>
-        <div class="header-actions">
-            <button class="btn-export" onclick="exportToExcel()">📊 تصدير Excel</button>
-            <button class="btn-reload" onclick="fetchOrders()">🔄 تحديث</button>
-        </div>
+        <span class="net-badge" id="netStatus">🟢 متزامن وسريع</span>
+        <button class="btn-sync" onclick="fetchOrders()">🔄 تحديث</button>
     </div>
 
-    <div class="stats-strip">
-        <div class="stat-item">
-            <div class="stat-title">الواصل (قطع فقط)</div>
-            <div class="stat-val" style="color:#34d399;" id="boxDelivered">0 د.ع</div>
+    <!-- صندوق الكاش المستلم اليوم -->
+    <div class="cash-box">
+        <div>
+            <div class="cash-title">💰 كاش المستلم اليوم (قطع البضاعة)</div>
+            <div class="cash-val" id="todayCash">0 د.ع</div>
         </div>
-        <div class="stat-item">
-            <div class="stat-title">بالطريق (قطع فقط)</div>
-            <div class="stat-val" style="color:#38bdf8;" id="boxShipping">0 د.ع</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-title" id="statMainLabel">مبيعات اليوم (قطع)</div>
-            <div class="stat-val" style="color:#fde047;" id="boxTotal">0 د.ع</div>
-        </div>
+        <div class="cash-count" id="todayDeliveredCount">0 طلبات واصلة</div>
     </div>
 
-    <div class="date-filter-bar">
-        <div class="date-buttons">
-            <button class="btn-date active" id="btnDateToday" onclick="setDateFilter('today', this)">اليوم</button>
-            <button class="btn-date" onclick="setDateFilter('yesterday', this)">البارحة</button>
-            <button class="btn-date" onclick="setDateFilter('week', this)">آخر 7 أيام</button>
-            <button class="btn-date" onclick="setDateFilter('all', this)">كل الأوقات</button>
-        </div>
-        <input type="date" id="specificDatePicker" class="custom-date-input" onchange="onCustomDateChange(this.value)">
+    <!-- تبويبات الفصل الأساسية للقضاء على التعليق -->
+    <div class="main-tabs">
+        <button class="main-tab-btn active" id="tabActive" onclick="switchMainTab('active')">📦 الطلبات النشطة الحالية (<span id="activeCount">0</span>)</button>
+        <button class="main-tab-btn" id="tabArchive" onclick="switchMainTab('archive')">📁 الأرشيف (الواصل والراجع)</button>
     </div>
 
-    <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث بالاسم، الهاتف، العنوان..." oninput="handleSearch()">
+    <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث باسم الزبون أو رقمه..." oninput="renderUI()">
 
-    <div class="tabs">
-        <button class="tab-btn active" onclick="filterTab('all', this)">الكل (<span id="totalBadge">0</span>)</button>
-        <button class="tab-btn" onclick="filterTab('داخل خانقين', this)">داخل خانقين</button>
-        <button class="tab-btn" onclick="filterTab('المحافظات', this)">خارج خانقين</button>
-        <button class="tab-btn" onclick="filterTab('بدون توصيل', this)">بدون توصيل</button>
-        <button class="tab-btn" onclick="filterTab('بالطريق', this)">🚚 بالطريق</button>
-        <button class="tab-btn" onclick="filterTab('واصل', this)">✅ واصل</button>
-        <button class="tab-btn" onclick="filterTab('مؤجل', this)">⏳ مؤجل</button>
-        <button class="tab-btn" onclick="filterTab('راجع', this)">❌ راجع</button>
-    </div>
-
+    <!-- قائمة الطلبات المعروضة -->
     <div id="ordersList"></div>
 
-    <button class="fab-add" onclick="openAddModal()">➕ إضافة طلب جديد</button>
+    <!-- زر إضافة طلب عائم -->
+    <button class="fab-add" onclick="openAddModal()">➕ طلب جديد</button>
 
-    <!-- نافذة إضافة طلب جديد -->
+    <!-- نافذة إضافة طلب -->
     <div id="addModal" class="modal">
         <div class="modal-content">
-            <div class="modal-title">📦 إضافة طلب جديد</div>
+            <div class="modal-title">📦 تثبيت طلب جديد</div>
             <input type="text" id="cName" placeholder="اسم الزبون (مطلوب)">
             <input type="tel" id="cPhone" placeholder="رقم الهاتف">
             <input type="text" id="cAddr" placeholder="العنوان بالتفصيل">
-            <input type="number" id="cPrice" placeholder="سعر القطع (دينار)" oninput="recalc()">
+            <input type="number" id="cPrice" placeholder="سعر القطع فقط (دينار)" oninput="recalcNew()">
             
-            <select id="cMethod" onchange="recalc()">
-                <option value="داخل خانقين">توصيل: داخل خانقين (+2,000 د.ع)</option>
-                <option value="المحافظات">توصيل: خارج خانقين / المحافظات (+5,000 د.ع)</option>
-                <option value="بدون توصيل">بدون توصيل (استلام مباشر 0 د.ع)</option>
-            </select>
-
-            <div id="calcView" class="calc-box">
-                السعر قبل التوصيل: 0 د.ع | التوصيل: 2,000 د.ع<br>
-                <strong>السعر بعد التوصيل: 2,000 د.ع</strong>
-            </div>
-
-            <textarea id="cNotes" placeholder="ملاحظات إضافية (اختياري)"></textarea>
-
-            <label class="upload-btn" for="fileInput">📷 اختيار صور المنتجات (عدة صور)</label>
-            <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="processImages(event, 'new')">
-            <div id="previewArea" class="previews"></div>
-
-            <button type="button" class="btn-submit" onclick="createOrder()">تثبيت الطلب</button>
-            <button class="modal-close" onclick="closeAddModal()">إلغاء</button>
-        </div>
-    </div>
-
-    <!-- نافذة تعديل الطلب مع ميزة إضافة صور جديدة وحذف صور سابقة -->
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-title">✏️ تعديل بيانات الطلب</div>
-            <input type="hidden" id="editId">
-            <label style="font-size:12px; color:#94a3b8;">اسم الزبون:</label>
-            <input type="text" id="editName">
-            <label style="font-size:12px; color:#94a3b8;">رقم الهاتف:</label>
-            <input type="tel" id="editPhone">
-            <label style="font-size:12px; color:#94a3b8;">العنوان:</label>
-            <input type="text" id="editAddr">
-            <label style="font-size:12px; color:#94a3b8;">السعر قبل التوصيل:</label>
-            <input type="number" id="editPrice">
-            <label style="font-size:12px; color:#94a3b8;">طريقة التوصيل:</label>
-            <select id="editMethod">
+            <select id="cMethod" onchange="recalcNew()">
                 <option value="داخل خانقين">داخل خانقين (+2,000 د.ع)</option>
                 <option value="المحافظات">خارج خانقين / المحافظات (+5,000 د.ع)</option>
                 <option value="بدون توصيل">بدون توصيل (0 د.ع)</option>
             </select>
-            <label style="font-size:12px; color:#94a3b8;">ملاحظات:</label>
-            <textarea id="editNotes"></textarea>
 
-            <!-- قسم إدارة الصور أثناء التعديل -->
-            <label style="font-size:12px; color:#94a3b8;">صور الطلب:</label>
+            <div id="calcView" class="calc-preview">المجموع عند الزبون: 2,000 د.ع</div>
+
+            <textarea id="cNotes" placeholder="ملاحظات إضافية (اختياري)"></textarea>
+
+            <label class="upload-label" for="fileInput">📷 اختيار صور المنتجات</label>
+            <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="handleImageUpload(event, 'new')">
+            <div id="previewArea" class="previews"></div>
+
+            <button type="button" class="btn-confirm" onclick="createOrder()">تثبيت الطلب</button>
+            <button class="btn-cancel" onclick="closeAddModal()">إلغاء</button>
+        </div>
+    </div>
+
+    <!-- نافذة تعديل الطلب -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">✏️ تعديل الطلب</div>
+            <input type="hidden" id="editId">
+            <input type="text" id="editName" placeholder="اسم الزبون">
+            <input type="tel" id="editPhone" placeholder="رقم الهاتف">
+            <input type="text" id="editAddr" placeholder="العنوان">
+            <input type="number" id="editPrice" placeholder="سعر القطع">
+            <select id="editMethod">
+                <option value="داخل خانقين">داخل خانقين (+2,000 د.ع)</option>
+                <option value="المحافظات">المحافظات (+5,000 د.ع)</option>
+                <option value="بدون توصيل">بدون توصيل (0 د.ع)</option>
+            </select>
+            <textarea id="editNotes" placeholder="ملاحظات"></textarea>
+
             <div id="editPreviewArea" class="previews"></div>
-            <label class="upload-btn" for="editFileInput" style="margin-top:4px;">📷 إضافة صور أخرى للمنتجات</label>
-            <input type="file" id="editFileInput" accept="image/*" multiple style="display:none;" onchange="processImages(event, 'edit')">
+            <label class="upload-label" for="editFileInput">📷 إضافة صور أخرى</label>
+            <input type="file" id="editFileInput" accept="image/*" multiple style="display:none;" onchange="handleImageUpload(event, 'edit')">
 
-            <button class="btn-submit" style="background:#059669; margin-top:8px;" onclick="saveEditedOrder()">💾 حفظ التعديلات</button>
-            <button class="modal-close" onclick="closeEditModal()">إلغاء</button>
+            <button class="btn-confirm" style="background:#059669;" onclick="saveEditedOrder()">💾 حفظ التعديل</button>
+            <button class="btn-cancel" onclick="closeEditModal()">إلغاء</button>
         </div>
     </div>
 
@@ -215,123 +162,57 @@
 
     <script>
         const FIREBASE_URL = "https://orders-99674-default-rtdb.firebaseio.com/orders.json";
-        const PRIMARY_KEY = "orders_v5_master";
+        const STORAGE_KEY = "orders_v6_turbo";
 
         let orders = [];
-        let selectedTab = "all";
-        let dateFilterMode = "today";
-        let customDateVal = "";
-        let searchQuery = "";
-        let activeImages = [];      // للطلب الجديد
-        let editImages = [];        // للطلب قيد التعديل
+        let currentTab = "active"; // 'active' (النشطة فقط) أو 'archive' (المسلم والراجع)
+        let activeImages = [];
+        let editImages = [];
 
-        function loadExistingLocalData() {
-            const keysToTry = [
-                PRIMARY_KEY,
-                "orders_secure_db_v4",
-                "simple_orders_storage_v1",
-                "local_orders_data_store",
-                "orders_v3_secure_cache",
-                "offline_orders_data_v2"
-            ];
-            
-            let recovered = [];
-            for (let k of keysToTry) {
-                try {
-                    const raw = localStorage.getItem(k);
-                    if (raw) {
-                        const parsed = JSON.parse(raw);
-                        if (Array.isArray(parsed) && parsed.length > 0) {
-                            recovered = parsed;
-                            break;
-                        } else if (typeof parsed === 'object' && Object.keys(parsed).length > 0) {
-                            recovered = Object.keys(parsed).map(id => ({ ...parsed[id], id: id }));
-                            break;
-                        }
-                    }
-                } catch(e) {}
-            }
-            return recovered;
-        }
+        // استرجاع الكاش المحلي الخفيف
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) orders = JSON.parse(raw);
+        } catch(e) { orders = []; }
 
-        orders = loadExistingLocalData();
-
-        function safeSaveLocal() {
+        function saveLocal() {
             try {
-                localStorage.setItem(PRIMARY_KEY, JSON.stringify(orders));
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
             } catch(e) {
-                try {
-                    const lightweight = orders.map(o => ({ ...o, images: [] }));
-                    localStorage.setItem(PRIMARY_KEY, JSON.stringify(lightweight));
-                } catch(err) {}
+                // في حال امتلاء ذاكرة الهاتف، نخزن بدون صور لضمان عمل الموقع بسرعة خارقة
+                const light = orders.map(o => ({ ...o, images: [] }));
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(light));
             }
         }
 
-        function calcFee(method) {
-            if (!method) return 0;
-            if (method.includes("خانقين")) return 2000;
-            if (method.includes("المحافظات") || method.includes("شركة")) return 5000;
+        function getFee(m) {
+            if (!m) return 0;
+            if (m.includes("خانقين")) return 2000;
+            if (m.includes("المحافظات") || m.includes("شركة")) return 5000;
             return 0;
         }
 
-        function recalc() {
+        function recalcNew() {
             const p = parseFloat(document.getElementById("cPrice").value) || 0;
             const m = document.getElementById("cMethod").value;
-            const f = calcFee(m);
-            const total = p + f;
-            document.getElementById("calcView").innerHTML = 
-                `السعر قبل التوصيل: ${p.toLocaleString()} د.ع | التوصيل: ${f.toLocaleString()} د.ع<br>` +
-                `<strong style="color:#38bdf8;">السعر بعد التوصيل: ${total.toLocaleString()} د.ع</strong>`;
+            const f = getFee(m);
+            document.getElementById("calcView").innerText = `المجموع عند الزبون: ${(p + f).toLocaleString()} د.ع (منها ${f.toLocaleString()} توصيل)`;
         }
 
-        function formatDateTime(timestamp) {
-            const d = new Date(timestamp || Date.now());
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            let hours = d.getHours();
-            const minutes = String(d.getMinutes()).padStart(2, '0');
-            const ampm = hours >= 12 ? 'م' : 'ص';
-            hours = hours % 12 || 12;
-            return `${year}/${month}/${day} - ${hours}:${minutes} ${ampm}`;
+        function getTodayDateStr() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
 
-        function getDateOnlyStr(timestamp) {
-            const d = new Date(timestamp || Date.now());
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-
-        function setDateFilter(mode, btn) {
-            dateFilterMode = mode;
-            customDateVal = "";
-            document.getElementById("specificDatePicker").value = "";
-            document.querySelectorAll(".btn-date").forEach(b => b.classList.remove("active"));
-            if (btn) btn.classList.add("active");
-
-            const labelMap = {
-                'today': 'مبيعات اليوم (قطع)',
-                'yesterday': 'مبيعات البارحة (قطع)',
-                'week': 'مبيعات 7 أيام (قطع)',
-                'all': 'كافة المبيعات (قطع)'
-            };
-            document.getElementById("statMainLabel").innerText = labelMap[mode] || 'المبيعات (قطع)';
+        function switchMainTab(tab) {
+            currentTab = tab;
+            document.getElementById("tabActive").classList.toggle("active", tab === 'active');
+            document.getElementById("tabArchive").classList.toggle("active", tab === 'archive');
             renderUI();
         }
 
-        function onCustomDateChange(val) {
-            if (!val) return;
-            dateFilterMode = "custom";
-            customDateVal = val;
-            document.querySelectorAll(".btn-date").forEach(b => b.classList.remove("active"));
-            document.getElementById("statMainLabel").innerText = `مبيعات (${val})`;
-            renderUI();
-        }
-
-        // معالجة الصور سواء كانت للطلب الجديد أو أثناء التعديل
-        function processImages(e, mode) {
+        // ضغط الصور السريع والخفيف
+        function handleImageUpload(e, mode) {
             const files = Array.from(e.target.files);
             files.forEach(file => {
                 const r = new FileReader();
@@ -340,7 +221,7 @@
                     img.onload = function() {
                         const canvas = document.createElement("canvas");
                         let w = img.width, h = img.height;
-                        const max = 250;
+                        const max = 220; // حجم ناعم جداً وخفيف
                         if (w > h && w > max) { h *= max / w; w = max; }
                         else if (h > max) { w *= max / h; h = max; }
                         canvas.width = w; canvas.height = h;
@@ -348,10 +229,10 @@
                         const b64 = canvas.toDataURL("image/jpeg", 0.4);
                         if (mode === 'new') {
                             activeImages.push(b64);
-                            renderNewThumbs();
+                            renderThumbs('previewArea', activeImages, 'new');
                         } else {
                             editImages.push(b64);
-                            renderEditThumbs();
+                            renderThumbs('editPreviewArea', editImages, 'edit');
                         }
                     };
                     img.src = evt.target.result;
@@ -360,188 +241,156 @@
             });
         }
 
-        function renderNewThumbs() {
-            const el = document.getElementById("previewArea");
+        function renderThumbs(elemId, arr, mode) {
+            const el = document.getElementById(elemId);
             el.innerHTML = "";
-            activeImages.forEach((src, idx) => {
+            arr.forEach((src, idx) => {
                 el.innerHTML += `
-                    <div class="thumb-wrapper">
-                        <img src="${src}" class="thumb">
-                        <button type="button" class="thumb-remove-btn" onclick="removeNewImg(${idx})">✕</button>
+                    <div class="thumb-wrap">
+                        <img src="${src}">
+                        <button type="button" class="thumb-del" onclick="delImg('${mode}', ${idx})">✕</button>
                     </div>
                 `;
             });
         }
 
-        function removeNewImg(idx) {
-            activeImages.splice(idx, 1);
-            renderNewThumbs();
+        function delImg(mode, idx) {
+            if (mode === 'new') {
+                activeImages.splice(idx, 1);
+                renderThumbs('previewArea', activeImages, 'new');
+            } else {
+                editImages.splice(idx, 1);
+                renderThumbs('editPreviewArea', editImages, 'edit');
+            }
         }
 
-        function renderEditThumbs() {
-            const el = document.getElementById("editPreviewArea");
-            el.innerHTML = "";
-            editImages.forEach((src, idx) => {
-                el.innerHTML += `
-                    <div class="thumb-wrapper">
-                        <img src="${src}" class="thumb">
-                        <button type="button" class="thumb-remove-btn" onclick="removeEditImg(${idx})">✕</button>
-                    </div>
-                `;
+        // تحديث صندوق كاش اليوم المستلم
+        function updateTodayCash() {
+            const today = getTodayDateStr();
+            let totalCash = 0;
+            let count = 0;
+
+            orders.forEach(o => {
+                if ((o.status === "واصل" || o.status === "تم التسليم") && o.deliveredDate === today) {
+                    totalCash += (Number(o.price) || 0);
+                    count++;
+                }
             });
-        }
 
-        function removeEditImg(idx) {
-            editImages.splice(idx, 1);
-            renderEditThumbs();
-        }
-
-        function refreshStats(currentFilteredOrders) {
-            let delivered = 0, shipping = 0, total = 0;
-            currentFilteredOrders.forEach(o => {
-                const itemPrice = Number(o.price) || 0;
-                if (o.status === "واصل" || o.status === "تم التسليم") delivered += itemPrice;
-                if (o.status === "بالطريق" || o.status === "قيد التجهيز") shipping += itemPrice;
-                if (o.status !== "راجع" && o.status !== "مؤجل") total += itemPrice;
-            });
-            document.getElementById("boxDelivered").innerText = delivered.toLocaleString() + " د.ع";
-            document.getElementById("boxShipping").innerText = shipping.toLocaleString() + " د.ع";
-            document.getElementById("boxTotal").innerText = total.toLocaleString() + " د.ع";
-        }
-
-        function handleSearch() {
-            searchQuery = (document.getElementById("searchInput").value || "").trim().toLowerCase();
-            renderUI();
-        }
-
-        function isOrderInSelectedDate(o) {
-            if (dateFilterMode === "all") return true;
-            const t = o.timestamp || o.date || Date.now();
-            const orderDateStr = getDateOnlyStr(t);
-            const now = new Date();
-            const todayStr = getDateOnlyStr(now.getTime());
-
-            if (dateFilterMode === "today") return orderDateStr === todayStr;
-            if (dateFilterMode === "yesterday") {
-                const yest = new Date(now);
-                yest.setDate(now.getDate() - 1);
-                return orderDateStr === getDateOnlyStr(yest.getTime());
-            }
-            if (dateFilterMode === "week") {
-                const diffTime = Math.abs(now.getTime() - t);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                return diffDays <= 7;
-            }
-            if (dateFilterMode === "custom") {
-                return orderDateStr === customDateVal;
-            }
-            return true;
+            document.getElementById("todayCash").innerText = totalCash.toLocaleString() + " د.ع";
+            document.getElementById("todayDeliveredCount").innerText = `${count} طلبات واصلة اليوم`;
         }
 
         function renderUI() {
             const list = document.getElementById("ordersList");
             list.innerHTML = "";
+            const query = (document.getElementById("searchInput").value || "").trim().toLowerCase();
 
-            let dateFiltered = orders.filter(isOrderInSelectedDate);
-            refreshStats(dateFiltered);
+            // فرز الطلبات: النشطة (قيد التجهيز / بالطريق / مؤجل) vs الأرشيف (واصل / راجع)
+            let activeOrders = orders.filter(o => o.status !== "واصل" && o.status !== "تم التسليم" && o.status !== "راجع");
+            let archiveOrders = orders.filter(o => o.status === "واصل" || o.status === "تم التسليم" || o.status === "راجع");
 
-            let filtered = dateFiltered.filter(o => {
-                let matchesTab = true;
-                const m = o.method || o.by || "";
-                if (selectedTab === "داخل خانقين") matchesTab = m.includes("خانقين");
-                else if (selectedTab === "المحافظات") matchesTab = (m.includes("المحافظات") || m.includes("شركة"));
-                else if (selectedTab === "بدون توصيل") matchesTab = m.includes("بدون توصيل");
-                else if (selectedTab !== "all") {
-                    if (selectedTab === "واصل") matchesTab = (o.status === "واصل" || o.status === "تم التسليم");
-                    else matchesTab = (o.status === selectedTab);
-                }
+            document.getElementById("activeCount").innerText = activeOrders.length;
+            updateTodayCash();
 
-                if (!matchesTab) return false;
+            let targetList = (currentTab === "active") ? activeOrders : archiveOrders;
 
-                if (searchQuery) {
-                    const name = (o.name || "").toLowerCase();
-                    const phone = (o.phone || "").toLowerCase();
-                    const addr = (o.addr || "").toLowerCase();
-                    return name.includes(searchQuery) || phone.includes(searchQuery) || addr.includes(searchQuery);
-                }
-                return true;
-            });
+            if (query) {
+                targetList = targetList.filter(o => 
+                    (o.name || "").toLowerCase().includes(query) || 
+                    (o.phone || "").toLowerCase().includes(query) ||
+                    (o.addr || "").toLowerCase().includes(query)
+                );
+            }
 
-            document.getElementById("totalBadge").innerText = filtered.length;
-
-            if (filtered.length === 0) {
-                list.innerHTML = `<p style="text-align:center; color:#64748b; padding:25px;">لا توجد طلبات مسجلة لهذه الفترة 📦</p>`;
+            if (targetList.length === 0) {
+                list.innerHTML = `<p style="text-align:center; color:#64748b; padding:30px; font-size:13px;">${currentTab === 'active' ? 'لا توجد طلبات معلقة.. كل الشغل مخلص! 🚀' : 'الأرشيف فارغ'}</p>`;
                 return;
             }
 
-            filtered.forEach(o => {
-                let statusClass = "pending";
-                let statusBannerClass = "st-pending";
-                let currentStatus = o.status || "قيد التجهيز";
+            targetList.forEach(o => {
+                let st = o.status || "قيد التجهيز";
+                let cardClass = "";
+                let badgeColor = "#38bdf8";
 
-                if (currentStatus === "بالطريق") { statusClass = "shipping"; statusBannerClass = "st-shipping"; }
-                if (currentStatus === "واصل" || currentStatus === "تم التسليم") { statusClass = "delivered"; statusBannerClass = "st-delivered"; currentStatus = "واصل"; }
-                if (currentStatus === "مؤجل") { statusClass = "postponed"; statusBannerClass = "st-postponed"; }
-                if (currentStatus === "راجع") { statusClass = "returned"; statusBannerClass = "st-returned"; }
+                if (st === "واصل" || st === "تم التسليم") { cardClass = "delivered"; badgeColor = "#34d399"; }
+                else if (st === "مؤجل") { cardClass = "postponed"; badgeColor = "#d8b4fe"; }
+                else if (st === "راجع") { cardClass = "returned"; badgeColor = "#f87171"; }
 
-                let imgs = [];
-                if (Array.isArray(o.images)) imgs = o.images;
-                else if (o.img) imgs = [o.img];
-
+                let imgs = Array.isArray(o.images) ? o.images : (o.img ? [o.img] : []);
                 let imgsHtml = "";
                 if (imgs.length > 0) {
                     imgsHtml = `<div class="img-gallery">` +
-                        imgs.map(img => `<img src="${img}" onclick="viewImg('${img}')">`).join("") +
+                        imgs.map(src => `<img src="${src}" onclick="viewImg('${src}')">`).join("") +
                         `</div>`;
                 }
 
-                const displayDate = o.formattedDate || formatDateTime(o.timestamp || o.date);
-                const itemPrice = Number(o.price) || 0;
-                const method = o.method || o.by || "داخل خانقين";
-                const fee = (o.fee !== undefined) ? Number(o.fee) : ((o.deliveryFee !== undefined) ? Number(o.deliveryFee) : calcFee(method));
-                const total = o.total ? Number(o.total) : (o.totalPrice ? Number(o.totalPrice) : (itemPrice + fee));
+                const price = Number(o.price) || 0;
+                const fee = getFee(o.method);
+                const total = o.total ? Number(o.total) : (price + fee);
 
                 list.innerHTML += `
-                    <div class="card ${statusClass}">
+                    <div class="card ${cardClass}" id="card_${o.id}">
                         <div class="card-header">
                             <span class="cust-name">${o.name}</span>
-                            <span class="order-date">🕒 ${displayDate}</span>
+                            <span class="badge-status" style="color:${badgeColor}; border:1px solid ${badgeColor};">الحالة: ${st}</span>
                         </div>
-                        
-                        <div class="status-banner ${statusBannerClass}">
-                            الحالة: ${currentStatus}
-                        </div>
-
                         <div class="card-details">
                             📍 العنوان: ${o.addr || 'غير محدد'}<br>
-                            💵 السعر قبل التوصيل: <strong>${itemPrice.toLocaleString()} د.ع</strong><br>
-                            🚚 أجور التوصيل: <strong>${fee.toLocaleString()} د.ع</strong> (${method})<br>
-                            💰 <span style="color:#38bdf8; font-weight:bold;">السعر بعد التوصيل: ${total.toLocaleString()} د.ع</span>
+                            💵 سعر القطع: <strong>${price.toLocaleString()} د.ع</strong> | التوصيل: ${fee.toLocaleString()} د.ع<br>
+                            💰 <span class="price-highlight">المبلغ المطلوب قبضه: ${total.toLocaleString()} د.ع</span>
                         </div>
                         ${imgsHtml}
-                        ${o.notes ? `<div class="note-tag">📝 ${o.notes}</div>` : ''}
-                        <div class="action-btns">
+                        ${o.notes ? `<div style="background:#334155; padding:5px; border-radius:5px; font-size:11px; color:#fde047; margin-bottom:6px;">📝 ${o.notes}</div>` : ''}
+                        
+                        <div class="action-row">
                             ${o.phone ? `<a href="tel:${o.phone}" class="btn-call">📞 اتصال</a>` : ''}
-                            <button class="btn-wa-cust" onclick="shareToCustomer('${o.id}')">👤 وصل الزبون</button>
-                            <button class="btn-wa-driver" onclick="shareToDriver('${o.id}')">🚚 وصل المندوب</button>
+                            <button class="btn-share" onclick="shareOrder('${o.id}')">📤 الوصل</button>
+                            
+                            <!-- أزرار الحالات مع رسالة التأكيد لمنع الغلط والتسريع -->
+                            <button class="btn-done" onclick="confirmStatus('${o.id}', 'واصل')">✅ واصل</button>
+                            <button class="btn-post" onclick="confirmStatus('${o.id}', 'مؤجل')">⏳ مؤجل</button>
+                            <button class="btn-ret" onclick="confirmStatus('${o.id}', 'راجع')">❌ راجع</button>
+                            
                             <button class="btn-edit" onclick="openEditModal('${o.id}')">✏️ تعديل</button>
-                            <button class="btn-status-ship" onclick="updateStatus('${o.id}', 'بالطريق')">بالطريق</button>
-                            <button class="btn-status-done" onclick="updateStatus('${o.id}', 'واصل')">واصل</button>
-                            <button class="btn-status-post" onclick="updateStatus('${o.id}', 'مؤجل')">مؤجل</button>
-                            <button class="btn-status-back" onclick="updateStatus('${o.id}', 'راجع')">راجع</button>
-                            <button class="btn-del" onclick="deleteOrder('${o.id}')">حذف</button>
                         </div>
                     </div>
                 `;
             });
         }
 
-        function openAddModal() {
-            document.getElementById("addModal").style.display = "flex";
-        }
+        // دالة تغيير الحالة مع رسالة التأكيد (تختفي فوراً وتتحول للأرشيف)
+        function confirmStatus(id, newStatus) {
+            const o = orders.find(x => x.id === id);
+            if (!o) return;
 
-        function closeAddModal() {
-            document.getElementById("addModal").style.display = "none";
+            let promptMsg = "";
+            if (newStatus === "واصل") promptMsg = `هل أنت متأكد من تسليم طلب (${o.name}) واستلام مبلغه؟\nسيتم إضافته فوراً لصندوق كاش اليوم ونقله للأرشيف.`;
+            else if (newStatus === "مؤجل") promptMsg = `هل تريد تأجيل طلب (${o.name}) لليوم القادم؟`;
+            else if (newStatus === "راجع") promptMsg = `هل أنت متأكد أن طلب (${o.name}) راجع بالكامل؟\nسيتم استبعاده ونقله للأرشيف.`;
+
+            if (confirm(promptMsg)) {
+                // إخفاء فوري سلس من الشاشة بدون أي لاغ
+                const cardEl = document.getElementById("card_" + id);
+                if (cardEl && currentTab === "active" && (newStatus === "واصل" || newStatus === "راجع")) {
+                    cardEl.style.display = "none";
+                }
+
+                orders = orders.map(item => {
+                    if (item.id === id) {
+                        return {
+                            ...item,
+                            status: newStatus,
+                            deliveredDate: (newStatus === "واصل") ? getTodayDateStr() : (item.deliveredDate || null)
+                        };
+                    }
+                    return item;
+                });
+
+                saveLocal();
+                renderUI();
+                pushCloud();
+            }
         }
 
         function createOrder() {
@@ -552,39 +401,33 @@
             const method = document.getElementById("cMethod").value;
             const notes = document.getElementById("cNotes").value.trim();
 
-            if (!name) {
-                alert("يرجى إدخال اسم الزبون");
-                return;
-            }
+            if (!name) { alert("اكتب اسم الزبون"); return; }
 
-            const fee = calcFee(method);
+            const fee = getFee(method);
             const total = price + fee;
             const now = Date.now();
 
             const newOrder = {
                 id: "id_" + now,
-                name, phone, 
-                addr, price, fee, total, method, notes,
+                name, phone, addr, price, fee, total, method, notes,
                 timestamp: now,
-                formattedDate: formatDateTime(now),
                 images: [...activeImages],
                 status: "قيد التجهيز"
             };
 
             orders.unshift(newOrder);
-            safeSaveLocal();
+            saveLocal();
             renderUI();
             closeAddModal();
 
+            // تصفير النموذج
             document.getElementById("cName").value = "";
             document.getElementById("cPhone").value = "";
             document.getElementById("cAddr").value = "";
             document.getElementById("cPrice").value = "";
             document.getElementById("cNotes").value = "";
-            document.getElementById("fileInput").value = "";
             document.getElementById("previewArea").innerHTML = "";
             activeImages = [];
-            recalc();
 
             pushCloud();
         }
@@ -597,19 +440,11 @@
             document.getElementById("editPhone").value = o.phone || "";
             document.getElementById("editAddr").value = o.addr || "";
             document.getElementById("editPrice").value = o.price || 0;
-            document.getElementById("editMethod").value = o.method || o.by || "داخل خانقين";
+            document.getElementById("editMethod").value = o.method || "داخل خانقين";
             document.getElementById("editNotes").value = o.notes || "";
 
-            // تعبئة الصور الحالية في نافذة التعديل
-            if (Array.isArray(o.images)) {
-                editImages = [...o.images];
-            } else if (o.img) {
-                editImages = [o.img];
-            } else {
-                editImages = [];
-            }
-            renderEditThumbs();
-
+            editImages = Array.isArray(o.images) ? [...o.images] : (o.img ? [o.img] : []);
+            renderThumbs('editPreviewArea', editImages, 'edit');
             document.getElementById("editModal").style.display = "flex";
         }
 
@@ -627,12 +462,9 @@
             const method = document.getElementById("editMethod").value;
             const notes = document.getElementById("editNotes").value.trim();
 
-            if (!name) {
-                alert("يرجى كتابة اسم الزبون");
-                return;
-            }
+            if (!name) { alert("يرجى كتابة اسم الزبون"); return; }
 
-            const fee = calcFee(method);
+            const fee = getFee(method);
             const total = price + fee;
 
             orders = orders.map(o => {
@@ -642,187 +474,64 @@
                 return o;
             });
 
-            safeSaveLocal();
+            saveLocal();
             renderUI();
             closeEditModal();
             pushCloud();
         }
 
+        function openAddModal() { document.getElementById("addModal").style.display = "flex"; }
+        function closeAddModal() { document.getElementById("addModal").style.display = "none"; }
+
         function pushCloud() {
-            document.getElementById("netStatus").innerText = "⏳ جاري التحديث...";
+            document.getElementById("netStatus").innerText = "⏳ مزامنة...";
             fetch(FIREBASE_URL, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(orders)
             }).then(() => {
-                document.getElementById("netStatus").innerText = "🟢 متزامن مع صديقك";
+                document.getElementById("netStatus").innerText = "🟢 متزامن وسريع";
             }).catch(() => {
-                document.getElementById("netStatus").innerText = "🟢 محفوظ على الهاتف";
+                document.getElementById("netStatus").innerText = "🟢 محفوظ بالتلفون";
             });
         }
 
         function fetchOrders() {
+            document.getElementById("netStatus").innerText = "⏳ جلب البيانات...";
             fetch(FIREBASE_URL)
                 .then(res => res.json())
                 .then(data => {
                     if (data) {
-                        let remoteList = [];
-                        if (Array.isArray(data)) {
-                            remoteList = data;
-                        } else if (typeof data === 'object') {
-                            remoteList = Object.keys(data).map(key => ({ ...data[key], id: key }));
-                        }
-                        
-                        if (remoteList.length > 0) {
-                            const map = new Map();
-                            orders.forEach(o => { if (o && o.id) map.set(o.id, o); });
-                            remoteList.forEach(o => { if (o && o.id) map.set(o.id, o); });
-                            orders = Array.from(map.values());
-                            
-                            safeSaveLocal();
+                        let list = Array.isArray(data) ? data : Object.keys(data).map(k => ({ ...data[k], id: k }));
+                        if (list.length > 0) {
+                            orders = list;
+                            saveLocal();
                             renderUI();
-                            document.getElementById("netStatus").innerText = "🟢 متزامن مع صديقك";
                         }
                     }
-                }).catch(() => {});
+                    document.getElementById("netStatus").innerText = "🟢 متزامن وسريع";
+                }).catch(() => {
+                    document.getElementById("netStatus").innerText = "🟢 أوفلاين";
+                });
         }
 
-        function updateStatus(id, newStatus) {
-            orders = orders.map(o => o.id === id ? { ...o, status: newStatus } : o);
-            safeSaveLocal();
-            renderUI();
-            pushCloud();
-        }
-
-        function deleteOrder(id) {
-            if (confirm("هل تريد حذف هذا الطلب؟")) {
-                orders = orders.filter(o => o.id !== id);
-                safeSaveLocal();
-                renderUI();
-                pushCloud();
-            }
-        }
-
-        function filterTab(tab, btn) {
-            selectedTab = tab;
-            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            renderUI();
-        }
-
-        function b64toBlobFile(b64Data, filename) {
-            const parts = b64Data.split(';base64,');
-            const contentType = parts[0].split(':')[1];
-            const raw = window.atob(parts[1]);
-            const rawLength = raw.length;
-            const uInt8Array = new Uint8Array(rawLength);
-            for (let i = 0; i < rawLength; ++i) {
-                uInt8Array[i] = raw.charCodeAt(i);
-            }
-            return new File([uInt8Array], filename, { type: contentType });
-        }
-
-        async function executeShare(msg, images, title) {
-            let imgs = [];
-            if (Array.isArray(images)) imgs = images;
-            else if (images) imgs = [images];
-
-            if (imgs.length > 0 && navigator.share) {
-                try {
-                    const files = imgs.map((img, i) => b64toBlobFile(img, `item_${i + 1}.jpg`));
-                    if (navigator.canShare && navigator.canShare({ files: files })) {
-                        await navigator.share({ files: files, title: title, text: msg });
-                        return;
-                    }
-                } catch(err) {}
-            }
-            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
-        }
-
-        function shareToCustomer(id) {
+        function shareOrder(id) {
             const o = orders.find(x => x.id === id);
             if (!o) return;
 
-            const itemPrice = Number(o.price) || 0;
-            const method = o.method || o.by || "داخل خانقين";
-            const fee = (o.fee !== undefined) ? Number(o.fee) : ((o.deliveryFee !== undefined) ? Number(o.deliveryFee) : calcFee(method));
-            const total = o.total ? Number(o.total) : (o.totalPrice ? Number(o.totalPrice) : (itemPrice + fee));
+            const fee = getFee(o.method);
+            const total = o.total ? Number(o.total) : ((Number(o.price) || 0) + fee);
 
-            let msg = `مرحباً بك زبوننا العزيز 🌸\n` +
-                      `تم تأكيد طلبك بنجاح، إليك تفاصيل الوصل:\n` +
-                      `━━━━━━━━━━━━━━\n` +
-                      `👤 *الاسم:* ${o.name}\n` +
-                      `📍 *عنوان التوصيل:* ${o.addr || 'غير محدد'}\n` +
-                      `💵 *سعر الطلب:* ${itemPrice.toLocaleString()} دينار\n` +
-                      `🚚 *أجور التوصيل:* ${fee.toLocaleString()} دينار\n` +
-                      `💰 *المبلغ الصافي المطلوب عند الاستلام:* ${total.toLocaleString()} دينار\n`;
-            if (o.notes) msg += `📝 *ملاحظة:* ${o.notes}\n`;
-            msg += `━━━━━━━━━━━━━━\nنشكرك على ثقتك بنا ونتمنى لك يوماً سعيداً ❤️`;
-
-            executeShare(msg, o.images || o.img, 'وصل طلبك');
-        }
-
-        function shareToDriver(id) {
-            const o = orders.find(x => x.id === id);
-            if (!o) return;
-
-            const itemPrice = Number(o.price) || 0;
-            const method = o.method || o.by || "داخل خانقين";
-            const fee = (o.fee !== undefined) ? Number(o.fee) : ((o.deliveryFee !== undefined) ? Number(o.deliveryFee) : calcFee(method));
-            const total = o.total ? Number(o.total) : (o.totalPrice ? Number(o.totalPrice) : (itemPrice + fee));
-
-            let msg = `🚚 *مهمة توصيل جديدة* 📦\n` +
+            let msg = `📦 *تفاصيل الطلب* \n` +
                       `━━━━━━━━━━━━━━\n` +
                       `👤 *الزبون:* ${o.name}\n` +
-                      `📞 *رقم الهاتف:* ${o.phone || 'غير مسجل'}\n` +
+                      `📞 *الهاتف:* ${o.phone || 'غير مسجل'}\n` +
                       `📍 *العنوان:* ${o.addr || 'غير محدد'}\n` +
-                      `💰 *المبلغ المطلوب قبضه من الزبون:* ${total.toLocaleString()} دينار\n` +
-                      `🚚 *نوع الشحنة:* ${method}\n`;
-            if (o.notes) msg += `⚠️ *ملاحظات التوصيل:* ${o.notes}\n`;
-            msg += `━━━━━━━━━━━━━━\nيرجى التواصل مع الزبون قبل التوجه إليه.`;
+                      `💰 *المبلغ الصافي المطلوب:* ${total.toLocaleString()} دينار\n` +
+                      `🚚 *نوع الشحنة:* ${o.method || 'داخل خانقين'}\n`;
+            if (o.notes) msg += `📝 *ملاحظات:* ${o.notes}\n`;
 
-            executeShare(msg, o.images || o.img, 'مهمة توصيل');
-        }
-
-        function exportToExcel() {
-            if (orders.length === 0) {
-                alert("لا توجد طلبات لتصديرها حالياً!");
-                return;
-            }
-
-            let csvContent = "\uFEFF";
-            csvContent += "تاريخ الطلب,اسم الزبون,رقم الهاتف,العنوان,طريقة التوصيل,السعر قبل التوصيل,أجور التوصيل,المجموع الكلي,الحالة,ملاحظات\n";
-
-            orders.forEach(o => {
-                const date = o.formattedDate || formatDateTime(o.timestamp || o.date);
-                const itemPrice = Number(o.price) || 0;
-                const method = o.method || o.by || "";
-                const fee = (o.fee !== undefined) ? Number(o.fee) : ((o.deliveryFee !== undefined) ? Number(o.deliveryFee) : calcFee(method));
-                const total = o.total ? Number(o.total) : (o.totalPrice ? Number(o.totalPrice) : (itemPrice + fee));
-
-                const row = [
-                    `"${date}"`,
-                    `"${o.name || ''}"`,
-                    `"${o.phone || ''}"`,
-                    `"${o.addr || ''}"`,
-                    `"${method}"`,
-                    `"${itemPrice}"`,
-                    `"${fee}"`,
-                    `"${total}"`,
-                    `"${o.status || ''}"`,
-                    `"${(o.notes || '').replace(/"/g, '""')}"`
-                ];
-                csvContent += row.join(",") + "\n";
-            });
-
-            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", `تقرير_الطلبات.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
         }
 
         function viewImg(src) {
@@ -830,10 +539,9 @@
             document.getElementById("modal").style.display = "flex";
         }
 
-        recalc();
+        recalcNew();
         renderUI();
         fetchOrders();
-        setInterval(fetchOrders, 4000);
     </script>
 </body>
 </html>
