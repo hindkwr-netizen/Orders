@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة الطلبات السريعة</title>
+    <title>إدارة الطلبات والتوصيل</title>
     <style>
         * { box-sizing: border-box; font-family: Tahoma, Arial, sans-serif; margin: 0; padding: 0; }
         body { background: #0f172a; padding: 10px 10px 85px 10px; color: #f8fafc; direction: rtl; }
@@ -12,29 +12,30 @@
         .net-badge { font-size: 11px; font-weight: bold; color: #34d399; }
         .btn-sync { background: #0284c7; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
 
-        /* صندوق الكاش المستلم */
+        /* صندوق الكاش المحاسب عليه */
         .cash-box { background: linear-gradient(135deg, #065f46, #047857); border: 1px solid #10b981; border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
         .cash-title { font-size: 11px; color: #a7f3d0; font-weight: bold; }
         .cash-val { font-size: 16px; font-weight: 900; color: #fff; }
         .cash-count { font-size: 11px; color: #d1fae5; background: rgba(0,0,0,0.25); padding: 3px 8px; border-radius: 12px; }
 
-        /* شريط فلتر الوقت واليوم الخفيف جداً */
+        /* شريط فلتر الوقت */
         .time-filter-bar { background: #1e293b; border: 1px solid #38bdf8; border-radius: 10px; padding: 8px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px; }
         .time-buttons { display: flex; gap: 5px; overflow-x: auto; }
         .btn-time { background: #334155; color: #cbd5e1; border: 0; padding: 6px 11px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; flex: 1; }
         .btn-time.active { background: #0284c7; color: #fff; }
         .custom-date-picker { width: 100%; padding: 6px; background: #0f172a; border: 1px solid #475569; border-radius: 6px; color: #fff; font-size: 12px; outline: none; }
 
-        /* أزرار التبويبات (النشطة vs الأرشيف) */
-        .main-tabs { display: flex; gap: 6px; margin-bottom: 8px; }
-        .main-tab-btn { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #94a3b8; font-weight: bold; font-size: 12px; cursor: pointer; text-align: center; }
+        /* تبويبات المراحل */
+        .main-tabs { display: flex; gap: 5px; margin-bottom: 8px; overflow-x: auto; }
+        .main-tab-btn { padding: 8px 10px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #94a3b8; font-weight: bold; font-size: 11px; cursor: pointer; white-space: nowrap; flex: 1; text-align: center; }
         .main-tab-btn.active { background: #0284c7; color: #fff; border-color: #38bdf8; }
 
         .search-box { width: 100%; padding: 9px 12px; border: 1px solid #475569; border-radius: 8px; font-size: 13px; background: #1e293b; color: #fff; margin-bottom: 10px; outline: none; }
 
         /* كارت الطلب */
         .card { background: #1e293b; border-radius: 10px; padding: 12px; margin-bottom: 10px; border: 1px solid #334155; border-right: 6px solid #38bdf8; }
-        .card.delivered { border-right-color: #10b981; }
+        .card.delivered-wait { border-right-color: #f59e0b; }
+        .card.settled { border-right-color: #10b981; }
         .card.returned { border-right-color: #ef4444; opacity: 0.75; }
         .card.postponed { border-right-color: #a855f7; }
 
@@ -46,14 +47,21 @@
         .card-details { font-size: 13px; color: #cbd5e1; line-height: 1.7; margin-bottom: 8px; }
         .price-highlight { color: #38bdf8; font-size: 14px; font-weight: 900; }
 
+        .driver-note-box { background: #0f172a; border: 1px dashed #38bdf8; padding: 6px 8px; border-radius: 6px; font-size: 12px; color: #38bdf8; margin-bottom: 8px; }
+
         .img-gallery { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; }
         .img-gallery img { width: 65px; height: 65px; object-fit: cover; border-radius: 6px; border: 1px solid #475569; cursor: pointer; flex-shrink: 0; }
 
         .action-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
-        .action-row button, .action-row a { border: 0; padding: 6px 9px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; text-decoration: none; }
+        .action-row button, .action-row a { border: 0; padding: 7px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; text-decoration: none; }
         .btn-call { background: #22c55e; color: #fff; }
         .btn-share { background: #0284c7; color: #fff; }
-        .btn-done { background: #059669; color: #fff; }
+        
+        /* زر تسليم المندوب */
+        .btn-driver-deliver { background: #eab308; color: #0f172a; border: 1px solid #ca8a04; }
+        /* زر تصفية واستلام الكاش للمحل */
+        .btn-settle-cash { background: #10b981; color: #fff; border: 1px solid #059669; }
+        
         .btn-post { background: #9333ea; color: #fff; }
         .btn-ret { background: #dc2626; color: #fff; }
         .btn-edit { background: #f59e0b; color: #1e293b; margin-right: auto; }
@@ -64,7 +72,7 @@
         .modal-content { background: #1e293b; border-radius: 12px; padding: 16px; width: 100%; max-width: 400px; border: 1px solid #475569; max-height: 90vh; overflow-y: auto; }
         .modal-title { font-size: 15px; font-weight: bold; margin-bottom: 12px; color: #38bdf8; text-align: center; }
         input, select, textarea { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #475569; border-radius: 8px; font-size: 14px; background: #0f172a; color: #fff; }
-        textarea { height: 45px; }
+        textarea { height: 50px; }
         .calc-preview { background: #0f172a; border: 1px solid #38bdf8; padding: 6px; border-radius: 6px; font-size: 12px; color: #38bdf8; text-align: center; font-weight: bold; margin-bottom: 8px; }
         .upload-label { display: block; background: #334155; padding: 9px; border-radius: 8px; text-align: center; font-size: 12px; font-weight: bold; cursor: pointer; border: 1px dashed #38bdf8; margin-bottom: 8px; color: #38bdf8; }
         .previews { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; }
@@ -83,16 +91,16 @@
         <button class="btn-sync" onclick="fetchOrders()">🔄 تحديث</button>
     </div>
 
-    <!-- صندوق الكاش المستلم -->
+    <!-- صندوق الكاش المقبوض الذي تمت المحاسبة عليه -->
     <div class="cash-box">
         <div>
-            <div class="cash-title" id="cashTitle">💰 كاش المستلم (اليوم)</div>
+            <div class="cash-title" id="cashTitle">💰 الكاش المقبوض المستلم من المندوب</div>
             <div class="cash-val" id="todayCash">0 د.ع</div>
         </div>
-        <div class="cash-count" id="todayDeliveredCount">0 طلبات واصلة</div>
+        <div class="cash-count" id="todayDeliveredCount">0 طلبات تمت محاسبتها</div>
     </div>
 
-    <!-- شريط فلترة الوقت السريع والمنظم -->
+    <!-- شريط فلتر الوقت -->
     <div class="time-filter-bar">
         <div class="time-buttons">
             <button class="btn-time active" id="timeToday" onclick="setTimeFilter('today', this)">اليوم</button>
@@ -102,18 +110,33 @@
         <input type="date" id="customDatePicker" class="custom-date-picker" onchange="onCustomDatePick(this.value)">
     </div>
 
-    <!-- تبويبات الفصل الأساسية -->
+    <!-- تبويبات المراحل: للمندوب، المحاسبة، والأرشيف -->
     <div class="main-tabs">
-        <button class="main-tab-btn active" id="tabActive" onclick="switchMainTab('active')">📦 الطلبات المعلقة (<span id="activeCount">0</span>)</button>
-        <button class="main-tab-btn" id="tabArchive" onclick="switchMainTab('archive')">📁 الأرشيف (الواصل والراجع)</button>
+        <button class="main-tab-btn active" id="tabDriver" onclick="switchMainTab('driver')">🚚 بيد المندوب (<span id="driverCount">0</span>)</button>
+        <button class="main-tab-btn" id="tabWaitSettle" onclick="switchMainTab('waitSettle')">⏳ واصل بانتظار الكاش (<span id="waitSettleCount">0</span>)</button>
+        <button class="main-tab-btn" id="tabSettled" onclick="switchMainTab('settled')">✅ تمت المحاسبة</button>
+        <button class="main-tab-btn" id="tabArchive" onclick="switchMainTab('archive')">❌ راجع ومؤجل</button>
     </div>
 
     <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث بالاسم أو الرقم أو العنوان..." oninput="renderUI()">
 
-    <!-- قائمة الطلبات المعروضة مرتبة من الأحدث للأقدم -->
+    <!-- قائمة الطلبات المعروضة -->
     <div id="ordersList"></div>
 
     <button class="fab-add" onclick="openAddModal()">➕ طلب جديد</button>
+
+    <!-- نافذة المندوب عند تسليم الطلب لكتابة الملاحظة -->
+    <div id="driverDeliverModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">🚚 تأكيد تسليم الشحنة للزبون</div>
+            <input type="hidden" id="deliverOrderId">
+            <p id="deliverOrderInfo" style="font-size: 13px; color: #cbd5e1; margin-bottom: 8px; text-align: center;"></p>
+            <label style="font-size:12px; color:#94a3b8;">ملاحظة المندوب عند الاستلام (اختياري):</label>
+            <textarea id="deliverDriverNote" placeholder="مثال: استلم كامل، أو استلم قطعتين، أو حول زين كاش..."></textarea>
+            <button type="button" class="btn-confirm" style="background: #eab308; color:#0f172a;" onclick="submitDriverDelivery()">تأكيد التسليم ونقل الطلب للمحاسبة</button>
+            <button type="button" class="btn-cancel" onclick="closeDriverDeliverModal()">إلغاء</button>
+        </div>
+    </div>
 
     <!-- نافذة إضافة طلب -->
     <div id="addModal" class="modal">
@@ -131,8 +154,7 @@
             </select>
 
             <div id="calcView" class="calc-preview">المجموع عند الزبون: 2,000 د.ع</div>
-
-            <textarea id="cNotes" placeholder="ملاحظات إضافية (اختياري)"></textarea>
+            <textarea id="cNotes" placeholder="ملاحظات الطلب (اختياري)"></textarea>
 
             <label class="upload-label" for="fileInput">📷 اختيار صور المنتجات</label>
             <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="handleImageUpload(event, 'new')">
@@ -174,11 +196,11 @@
 
     <script>
         const FIREBASE_URL = "https://orders-99674-default-rtdb.firebaseio.com/orders.json";
-        const STORAGE_KEY = "orders_v6_turbo";
+        const STORAGE_KEY = "orders_v7_delivery_system";
 
         let orders = [];
-        let currentTab = "active";
-        let timeFilter = "today"; // today, yesterday, custom, all
+        let currentTab = "driver"; // driver, waitSettle, settled, archive
+        let timeFilter = "today";
         let customDateVal = "";
         let activeImages = [];
         let editImages = [];
@@ -233,13 +255,6 @@
             document.getElementById("customDatePicker").value = "";
             document.querySelectorAll(".btn-time").forEach(b => b.classList.remove("active"));
             if (btn) btn.classList.add("active");
-
-            const titles = {
-                'today': '💰 كاش المستلم (اليوم)',
-                'yesterday': '💰 كاش المستلم (البارحة)',
-                'all': '💰 إجمالي الكاش المستلم'
-            };
-            document.getElementById("cashTitle").innerText = titles[mode] || '💰 كاش المستلم';
             renderUI();
         }
 
@@ -248,14 +263,16 @@
             timeFilter = "custom";
             customDateVal = val;
             document.querySelectorAll(".btn-time").forEach(b => b.classList.remove("active"));
-            document.getElementById("cashTitle").innerText = `💰 كاش يوم (${val})`;
             renderUI();
         }
 
         function switchMainTab(tab) {
             currentTab = tab;
-            document.getElementById("tabActive").classList.toggle("active", tab === 'active');
-            document.getElementById("tabArchive").classList.toggle("active", tab === 'archive');
+            document.querySelectorAll(".main-tab-btn").forEach(b => b.classList.remove("active"));
+            if (tab === 'driver') document.getElementById("tabDriver").classList.add("active");
+            if (tab === 'waitSettle') document.getElementById("tabWaitSettle").classList.add("active");
+            if (tab === 'settled') document.getElementById("tabSettled").classList.add("active");
+            if (tab === 'archive') document.getElementById("tabArchive").classList.add("active");
             renderUI();
         }
 
@@ -335,14 +352,14 @@
             let count = 0;
 
             filteredOrders.forEach(o => {
-                if (o.status === "واصل" || o.status === "تم التسليم") {
+                if (o.status === "تمت المحاسبة") {
                     totalCash += (Number(o.price) || 0);
                     count++;
                 }
             });
 
             document.getElementById("todayCash").innerText = totalCash.toLocaleString() + " د.ع";
-            document.getElementById("todayDeliveredCount").innerText = `${count} طلبات واصلة`;
+            document.getElementById("todayDeliveredCount").innerText = `${count} طلبات مقبوضة`;
         }
 
         function renderUI() {
@@ -350,24 +367,26 @@
             list.innerHTML = "";
             const query = (document.getElementById("searchInput").value || "").trim().toLowerCase();
 
-            // 1. الترتيب التلقائي من الأحدث إلى الأقدم (الأحدث فوق دائماً)
             orders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
-            // 2. تطبيق فلتر الوقت المختار
             let timeFilteredOrders = orders.filter(isOrderInSelectedTime);
-
-            // تحديث صندوق كاش اليوم مع الفترة المحددة
             updateCashBox(timeFilteredOrders);
 
-            // 3. تقسيم الطلبات (نشطة vs أرشيف)
-            let activeOrders = timeFilteredOrders.filter(o => o.status !== "واصل" && o.status !== "تم التسليم" && o.status !== "راجع");
-            let archiveOrders = timeFilteredOrders.filter(o => o.status === "واصل" || o.status === "تم التسليم" || o.status === "راجع");
+            // تصنيف الطلبات حسب الحالات الجديدة
+            let driverOrders = timeFilteredOrders.filter(o => o.status === "بالطريق" || o.status === "قيد التجهيز");
+            let waitSettleOrders = timeFilteredOrders.filter(o => o.status === "واصل - بانتظار التحاسب");
+            let settledOrders = timeFilteredOrders.filter(o => o.status === "تمت المحاسبة");
+            let archiveOrders = timeFilteredOrders.filter(o => o.status === "مؤجل" || o.status === "راجع");
 
-            document.getElementById("activeCount").innerText = activeOrders.length;
+            document.getElementById("driverCount").innerText = driverOrders.length;
+            document.getElementById("waitSettleCount").innerText = waitSettleOrders.length;
 
-            let targetList = (currentTab === "active") ? activeOrders : archiveOrders;
+            let targetList = [];
+            if (currentTab === "driver") targetList = driverOrders;
+            else if (currentTab === "waitSettle") targetList = waitSettleOrders;
+            else if (currentTab === "settled") targetList = settledOrders;
+            else if (currentTab === "archive") targetList = archiveOrders;
 
-            // 4. البحث السريع
             if (query) {
                 targetList = targetList.filter(o => 
                     (o.name || "").toLowerCase().includes(query) || 
@@ -377,7 +396,7 @@
             }
 
             if (targetList.length === 0) {
-                list.innerHTML = `<p style="text-align:center; color:#64748b; padding:30px; font-size:13px;">${currentTab === 'active' ? 'لا توجد طلبات معلقة لهذه الفترة! 🚀' : 'الأرشيف فارغ لهذه الفترة'}</p>`;
+                list.innerHTML = `<p style="text-align:center; color:#64748b; padding:30px; font-size:13px;">لا توجد طلبات في هذا القسم حالياً</p>`;
                 return;
             }
 
@@ -386,7 +405,8 @@
                 let cardClass = "";
                 let badgeColor = "#38bdf8";
 
-                if (st === "واصل" || st === "تم التسليم") { cardClass = "delivered"; badgeColor = "#34d399"; }
+                if (st === "واصل - بانتظار التحاسب") { cardClass = "delivered-wait"; badgeColor = "#f59e0b"; }
+                else if (st === "تمت المحاسبة") { cardClass = "settled"; badgeColor = "#34d399"; }
                 else if (st === "مؤجل") { cardClass = "postponed"; badgeColor = "#d8b4fe"; }
                 else if (st === "راجع") { cardClass = "returned"; badgeColor = "#f87171"; }
 
@@ -416,15 +436,26 @@
                             💵 سعر القطع: <strong>${price.toLocaleString()} د.ع</strong> | التوصيل: ${fee.toLocaleString()} د.ع<br>
                             💰 <span class="price-highlight">المطلوب قبضه: ${total.toLocaleString()} د.ع</span>
                         </div>
+                        
+                        ${o.driverNote ? `<div class="driver-note-box">🚚 <strong>ملاحظة المندوب:</strong> ${o.driverNote}</div>` : ''}
                         ${imgsHtml}
                         ${o.notes ? `<div style="background:#334155; padding:5px; border-radius:5px; font-size:11px; color:#fde047; margin-bottom:6px;">📝 ${o.notes}</div>` : ''}
                         
                         <div class="action-row">
                             ${o.phone ? `<a href="tel:${o.phone}" class="btn-call">📞 اتصال</a>` : ''}
                             <button class="btn-share" onclick="shareOrder('${o.id}')">📤 الوصل</button>
-                            <button class="btn-done" onclick="confirmStatus('${o.id}', 'واصل')">✅ واصل</button>
-                            <button class="btn-post" onclick="confirmStatus('${o.id}', 'مؤجل')">⏳ مؤجل</button>
-                            <button class="btn-ret" onclick="confirmStatus('${o.id}', 'راجع')">❌ راجع</button>
+                            
+                            <!-- أزرار العمليات حسب الحالة -->
+                            ${(st === 'بالطريق' || st === 'قيد التجهيز') ? `
+                                <button class="btn-driver-deliver" onclick="openDriverDeliverModal('${o.id}')">🚚 سلّمته للزبون</button>
+                                <button class="btn-post" onclick="changeStatus('${o.id}', 'مؤجل')">⏳ تأجيل</button>
+                                <button class="btn-ret" onclick="changeStatus('${o.id}', 'راجع')">❌ راجع</button>
+                            ` : ''}
+
+                            ${(st === 'واصل - بانتظار التحاسب') ? `
+                                <button class="btn-settle-cash" onclick="confirmSettleCash('${o.id}')">💵 تم استلام الكاش بالمحل</button>
+                            ` : ''}
+
                             <button class="btn-edit" onclick="openEditModal('${o.id}')">✏️ تعديل</button>
                         </div>
                     </div>
@@ -432,16 +463,71 @@
             });
         }
 
-        function confirmStatus(id, newStatus) {
+        // نافذة المندوب عند تسليم الطلب
+        function openDriverDeliverModal(id) {
+            const o = orders.find(x => x.id === id);
+            if (!o) return;
+            document.getElementById("deliverOrderId").value = o.id;
+            const total = o.total ? Number(o.total) : ((Number(o.price) || 0) + getFee(o.method));
+            document.getElementById("deliverOrderInfo").innerText = `الزبون: ${o.name} | المبلغ المطلوب: ${total.toLocaleString()} د.ع`;
+            document.getElementById("deliverDriverNote").value = "";
+            document.getElementById("driverDeliverModal").style.display = "flex";
+        }
+
+        function closeDriverDeliverModal() {
+            document.getElementById("driverDeliverModal").style.display = "none";
+        }
+
+        function submitDriverDelivery() {
+            const id = document.getElementById("deliverOrderId").value;
+            const note = document.getElementById("deliverDriverNote").value.trim();
+
+            orders = orders.map(item => {
+                if (item.id === id) {
+                    return {
+                        ...item,
+                        status: "واصل - بانتظار التحاسب",
+                        driverNote: note || "تم التسليم بنجاح",
+                        deliveredTime: Date.now()
+                    };
+                }
+                return item;
+            });
+
+            saveLocal();
+            closeDriverDeliverModal();
+            renderUI();
+            pushCloud();
+        }
+
+        // زر المحاسبة وتصفية الكاش عند وصول المندوب للمحل
+        function confirmSettleCash(id) {
             const o = orders.find(x => x.id === id);
             if (!o) return;
 
-            let promptMsg = "";
-            if (newStatus === "واصل") promptMsg = `هل أنت متأكد من تسليم طلب (${o.name}) واستلام مبلغه؟`;
-            else if (newStatus === "مؤجل") promptMsg = `هل تريد تأجيل طلب (${o.name})؟`;
-            else if (newStatus === "راجع") promptMsg = `هل أنت متأكد أن طلب (${o.name}) راجع؟`;
+            if (confirm(`هل تم استلام كاش طلب الزبون (${o.name}) من المندوب؟\nسيتم نقله لخانة "تمت المحاسبة" واحتساب مبلغه في الصندوق.`)) {
+                orders = orders.map(item => {
+                    if (item.id === id) {
+                        return {
+                            ...item,
+                            status: "تمت المحاسبة",
+                            settledTime: Date.now()
+                        };
+                    }
+                    return item;
+                });
 
-            if (confirm(promptMsg)) {
+                saveLocal();
+                renderUI();
+                pushCloud();
+            }
+        }
+
+        function changeStatus(id, newStatus) {
+            const o = orders.find(x => x.id === id);
+            if (!o) return;
+
+            if (confirm(`هل تريد تغيير حالة طلب (${o.name}) إلى "${newStatus}"؟`)) {
                 orders = orders.map(item => {
                     if (item.id === id) {
                         return { ...item, status: newStatus };
@@ -474,10 +560,9 @@
                 name, phone, addr, price, fee, total, method, notes,
                 timestamp: now,
                 images: [...activeImages],
-                status: "قيد التجهيز"
+                status: "بالطريق" // يبدأ تلقائياً ليكون متاحاً للمندوب
             };
 
-            // ينزل فوراً في أعلى المصفوفة
             orders.unshift(newOrder);
             saveLocal();
             renderUI();
