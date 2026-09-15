@@ -3,95 +3,675 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام إدارة اللايف</title>
+    <title>إدارة الطلبات والتوصيل</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        h2 {
-            text-align: center;
-            color: #333;
-        }
-        .input-group {
-            margin-bottom: 15px;
-        }
-        .input-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #555;
-        }
-        .input-group input, .input-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-        .btn-add {
-            width: 100%;
-            padding: 12px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .btn-add:hover {
-            background-color: #218838;
-        }
+        * { box-sizing: border-box; font-family: Tahoma, Arial, sans-serif; margin: 0; padding: 0; }
+        body { background: #0f172a; padding: 10px 10px 85px 10px; color: #f8fafc; direction: rtl; }
+
+        .header-bar { background: #1e293b; border: 1px solid #334155; padding: 8px 12px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .net-badge { font-size: 11px; font-weight: bold; color: #34d399; }
+        .btn-sync { background: #0284c7; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+        .stat-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 10px; text-align: center; }
+        .stat-card.sales { border-color: #38bdf8; background: linear-gradient(135deg, #0c4a6e, #075985); }
+        .stat-card.cash { border-color: #10b981; background: linear-gradient(135deg, #065f46, #047857); }
+        .stat-label { font-size: 11px; opacity: 0.9; margin-bottom: 3px; font-weight: bold; color: #e2e8f0; }
+        .stat-number { font-size: 15px; font-weight: 900; color: #fff; }
+        .stat-sub { font-size: 10px; opacity: 0.8; margin-top: 2px; }
+
+        .time-filter-bar { background: #1e293b; border: 1px solid #38bdf8; border-radius: 10px; padding: 8px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px; }
+        .time-buttons { display: flex; gap: 5px; overflow-x: auto; }
+        .btn-time { background: #334155; color: #cbd5e1; border: 0; padding: 6px 11px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; flex: 1; }
+        .btn-time.active { background: #0284c7; color: #fff; }
+        .custom-date-picker { width: 100%; padding: 6px; background: #0f172a; border: 1px solid #475569; border-radius: 6px; color: #fff; font-size: 12px; outline: none; }
+
+        .main-tabs { display: flex; gap: 5px; margin-bottom: 8px; overflow-x: auto; }
+        .main-tab-btn { padding: 8px 10px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #94a3b8; font-weight: bold; font-size: 11px; cursor: pointer; white-space: nowrap; flex: 1; text-align: center; }
+        .main-tab-btn.active { background: #0284c7; color: #fff; border-color: #38bdf8; }
+
+        .search-box { width: 100%; padding: 9px 12px; border: 1px solid #475569; border-radius: 8px; font-size: 13px; background: #1e293b; color: #fff; margin-bottom: 10px; outline: none; }
+
+        .card { background: #1e293b; border-radius: 10px; padding: 12px; margin-bottom: 10px; border: 1px solid #334155; border-right: 6px solid #38bdf8; }
+        .card.delivered-wait { border-right-color: #f59e0b; }
+        .card.settled { border-right-color: #10b981; }
+        .card.returned { border-right-color: #ef4444; opacity: 0.75; }
+        .card.postponed { border-right-color: #a855f7; }
+
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .cust-name { font-size: 15px; font-weight: bold; color: #fff; }
+        .order-time { font-size: 11px; color: #94a3b8; background: #0f172a; padding: 2px 6px; border-radius: 4px; }
+        .badge-status { font-size: 11px; padding: 2px 6px; border-radius: 5px; font-weight: bold; display: inline-block; margin-bottom: 6px; }
+
+        .card-details { font-size: 13px; color: #cbd5e1; line-height: 1.7; margin-bottom: 8px; }
+        .price-highlight { color: #38bdf8; font-size: 14px; font-weight: 900; }
+
+        .driver-note-box { background: #0f172a; border: 1px dashed #38bdf8; padding: 6px 8px; border-radius: 6px; font-size: 12px; color: #38bdf8; margin-bottom: 8px; }
+
+        .img-gallery { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; }
+        .img-gallery img { width: 65px; height: 65px; object-fit: cover; border-radius: 6px; border: 1px solid #475569; cursor: pointer; flex-shrink: 0; }
+
+        .action-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+        .action-row button, .action-row a { border: 0; padding: 7px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; text-decoration: none; }
+        .btn-call { background: #22c55e; color: #fff; }
+        .btn-share { background: #0284c7; color: #fff; }
+        .btn-driver-deliver { background: #eab308; color: #0f172a; border: 1px solid #ca8a04; }
+        .btn-settle-cash { background: #10b981; color: #fff; border: 1px solid #059669; }
+        .btn-post { background: #9333ea; color: #fff; }
+        .btn-ret { background: #dc2626; color: #fff; }
+        .btn-edit { background: #f59e0b; color: #1e293b; margin-right: auto; }
+
+        .fab-add { position: fixed; bottom: 18px; left: 18px; background: #2563eb; color: #fff; border: none; border-radius: 50px; padding: 13px 20px; font-size: 14px; font-weight: bold; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.5); cursor: pointer; z-index: 999; }
+
+        .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; padding: 12px; }
+        .modal-content { background: #1e293b; border-radius: 12px; padding: 16px; width: 100%; max-width: 400px; border: 1px solid #475569; max-height: 90vh; overflow-y: auto; }
+        .modal-title { font-size: 15px; font-weight: bold; margin-bottom: 12px; color: #38bdf8; text-align: center; }
+        input[type="text"], input[type="tel"], input[type="number"], textarea { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #475569; border-radius: 8px; font-size: 14px; background: #0f172a; color: #fff; }
+        textarea { height: 50px; }
+
+        .checkbox-container { display: flex; align-items: center; gap: 10px; background: #0f172a; border: 1px solid #475569; padding: 10px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
+        .checkbox-container input { width: 18px; height: 18px; cursor: pointer; }
+        .checkbox-label { font-size: 13px; font-weight: bold; color: #38bdf8; cursor: pointer; user-select: none; }
+
+        .calc-preview { background: #0f172a; border: 1px solid #38bdf8; padding: 6px; border-radius: 6px; font-size: 12px; color: #38bdf8; text-align: center; font-weight: bold; margin-bottom: 8px; }
+        .upload-label { display: block; background: #334155; padding: 9px; border-radius: 8px; text-align: center; font-size: 12px; font-weight: bold; cursor: pointer; border: 1px dashed #38bdf8; margin-bottom: 8px; color: #38bdf8; }
+        .previews { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; }
+        .thumb-wrap { position: relative; flex-shrink: 0; }
+        .thumb-wrap img { width: 55px; height: 55px; object-fit: cover; border-radius: 6px; }
+        .thumb-del { position: absolute; top: -4px; right: -4px; background: #ef4444; color: #fff; border: 0; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; cursor: pointer; }
+        .btn-confirm { background: #2563eb; color: #fff; border: 0; width: 100%; padding: 11px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; }
+        .btn-cancel { background: #475569; color: #fff; border: 0; width: 100%; padding: 9px; border-radius: 8px; font-weight: bold; margin-top: 6px; cursor: pointer; }
+        .img-modal img { max-width: 95%; max-height: 90%; border-radius: 8px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>📦 إضافة طلب جديد</h2>
-    
-    <div class="input-group">
-        <label>اسم الزبون</label>
-        <input type="text" id="customerName" placeholder="مثال: أحمد محمد">
+    <div class="header-bar">
+        <span class="net-badge" id="netStatus">🟢 متزامن وسريع</span>
+        <button class="btn-sync" onclick="fetchOrders()">🔄 تحديث</button>
     </div>
 
-    <div class="input-group">
-        <label>الأغراض (مثال: خلاط، عطر، إلخ)</label>
-        <input type="text" id="items" placeholder="شنو طلب؟">
+    <div class="stats-grid">
+        <div class="stat-card sales">
+            <div class="stat-label" id="salesBoxLabel">📊 مبيعات اليوم (قطع فقط)</div>
+            <div class="stat-number" id="totalSalesVal">0 د.ع</div>
+            <div class="stat-sub" id="totalOrdersCount">0 طلب</div>
+        </div>
+        <div class="stat-card cash">
+            <div class="stat-label" id="cashBoxLabel">💰 الكاش الواصل المقبوض</div>
+            <div class="stat-number" id="todayCash">0 د.ع</div>
+            <div class="stat-sub" id="todayDeliveredCount">0 طلبات واصلة</div>
+        </div>
     </div>
 
-    <div class="input-group">
-        <label>السعر الكلي (دينار)</label>
-        <input type="number" id="price" placeholder="مثال: 25000">
+    <div class="time-filter-bar">
+        <div class="time-buttons">
+            <button class="btn-time active" id="timeToday" onclick="setTimeFilter('today', this)">اليوم</button>
+            <button class="btn-time" onclick="setTimeFilter('yesterday', this)">البارحة</button>
+            <button class="btn-time" onclick="setTimeFilter('all', this)">كل الأوقات</button>
+        </div>
+        <input type="date" id="customDatePicker" class="custom-date-picker" onchange="onCustomDatePick(this.value)">
     </div>
 
-    <div class="input-group">
-        <label>حالة الطلب</label>
-        <select id="status">
-            <option value="قيد التجميع">⏳ قيد التجميع</option>
-            <option value="جاهز للشحن">📦 جاهز للشحن</option>
-            <option value="واصل">✅ واصل</option>
-        </select>
+    <div class="main-tabs">
+        <button class="main-tab-btn active" id="tabDriver" onclick="switchMainTab('driver')">🚚 بيد المندوب (<span id="driverCount">0</span>)</button>
+        <button class="main-tab-btn" id="tabWaitSettle" onclick="switchMainTab('waitSettle')">⏳ بانتظار الكاش (<span id="waitSettleCount">0</span>)</button>
+        <button class="main-tab-btn" id="tabSettled" onclick="switchMainTab('settled')">✅ تمت المحاسبة / واصل (<span id="settledCount">0</span>)</button>
+        <button class="main-tab-btn" id="tabArchive" onclick="switchMainTab('archive')">❌ راجع ومؤجل</button>
     </div>
 
-    <div class="input-group">
-        <label>صورة الأغراض</label>
-        <input type="file" id="imageInput" accept="image/*">
+    <input type="text" id="searchInput" class="search-box" placeholder="🔍 ابحث بالاسم أو الرقم أو العنوان..." oninput="renderUI()">
+
+    <div id="ordersList"></div>
+
+    <button class="fab-add" onclick="openAddModal()">➕ طلب جديد</button>
+
+    <div id="driverDeliverModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">🚚 تأكيد تسليم الشحنة للزبون</div>
+            <input type="hidden" id="deliverOrderId">
+            <p id="deliverOrderInfo" style="font-size: 13px; color: #cbd5e1; margin-bottom: 8px; text-align: center;"></p>
+            <label style="font-size:12px; color:#94a3b8;">ملاحظة المندوب عند الاستلام (اختياري):</label>
+            <textarea id="deliverDriverNote" placeholder="مثال: استلم كامل، أو استلم قطعتين..."></textarea>
+            <button type="button" class="btn-confirm" style="background: #eab308; color:#0f172a;" onclick="submitDriverDelivery()">تأكيد التسليم ونقل الطلب للمحاسبة</button>
+            <button type="button" class="btn-cancel" onclick="closeDriverDeliverModal()">إلغاء</button>
+        </div>
     </div>
 
-    <button class="btn-add">حفظ الطلب</button>
-</div>
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">📦 تثبيت طلب جديد</div>
+            <input type="text" id="cName" placeholder="اسم الزبون (مطلوب)">
+            <input type="tel" id="cPhone" placeholder="رقم الهاتف">
+            <input type="text" id="cAddr" placeholder="العنوان بالتفصيل">
+            <input type="number" id="cPrice" placeholder="سعر القطع فقط (دينار)" oninput="recalcNew()">
+            
+            <label class="checkbox-container">
+                <input type="checkbox" id="cIsProvince" onchange="recalcNew()">
+                <span class="checkbox-label">شحن للمحافظات (+5,000 د.ع)</span>
+            </label>
 
+            <div id="calcView" class="calc-preview">المجموع عند الزبون: 0 د.ع</div>
+            <textarea id="cNotes" placeholder="ملاحظات الطلب (اختياري)"></textarea>
+
+            <label class="upload-label" for="fileInput">📷 اختيار صور المنتجات</label>
+            <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="handleImageUpload(event, 'new')">
+            <div id="previewArea" class="previews"></div>
+
+            <button type="button" class="btn-confirm" onclick="createOrder()">تثبيت الطلب</button>
+            <button class="btn-cancel" onclick="closeAddModal()">إلغاء</button>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">✏️ تعديل الطلب</div>
+            <input type="hidden" id="editId">
+            <input type="text" id="editName" placeholder="اسم الزبون">
+            <input type="tel" id="editPhone" placeholder="رقم الهاتف">
+            <input type="text" id="editAddr" placeholder="العنوان">
+            <input type="number" id="editPrice" placeholder="سعر القطع">
+            
+            <label class="checkbox-container">
+                <input type="checkbox" id="editIsProvince">
+                <span class="checkbox-label">شحن للمحافظات (+5,000 د.ع)</span>
+            </label>
+
+            <textarea id="editNotes" placeholder="ملاحظات"></textarea>
+
+            <div id="editPreviewArea" class="previews"></div>
+            <label class="upload-label" for="editFileInput">📷 إضافة صور أخرى</label>
+            <input type="file" id="editFileInput" accept="image/*" multiple style="display:none;" onchange="handleImageUpload(event, 'edit')">
+
+            <button class="btn-confirm" style="background:#059669;" onclick="saveEditedOrder()">💾 حفظ التعديل</button>
+            <button class="btn-cancel" onclick="closeEditModal()">إلغاء</button>
+        </div>
+    </div>
+
+    <div id="modal" class="modal img-modal" onclick="this.style.display='none'">
+        <img id="modalViewer" src="">
+    </div>
+
+    <script>
+        const FIREBASE_URL = "https://orders-99674-default-rtdb.firebaseio.com/orders.json";
+        const STORAGE_KEY = "orders_v7_delivery_system";
+
+        let orders = [];
+        let currentTab = "driver";
+        let timeFilter = "today";
+        let customDateVal = "";
+        let activeImages = [];
+        let editImages = [];
+
+        function loadExistingLocalData() {
+            const keysToTry = [STORAGE_KEY, "orders_v5_master", "orders_secure_db_v4", "simple_orders_storage_v1"];
+            for (let k of keysToTry) {
+                try {
+                    const raw = localStorage.getItem(k);
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                    }
+                } catch(e) {}
+            }
+            return [];
+        }
+
+        orders = loadExistingLocalData();
+
+        function saveLocal() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+            } catch(e) {
+                // نظام حماية الذاكرة: ضغط ومسح الصور القديمة اذا امتلأت الذاكرة
+                let freedOrders = orders.map(o => {
+                    if(o.status === 'settled' || o.status === 'returned' || o.status === 'postponed') {
+                        return { ...o, images: [] };
+                    }
+                    return o;
+                });
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(freedOrders));
+                    orders = freedOrders; 
+                } catch(e2) {
+                    const light = orders.map(o => ({ ...o, images: [] }));
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(light));
+                    orders = light;
+                }
+            }
+        }
+
+        function recalcNew() {
+            const p = parseFloat(document.getElementById("cPrice").value) || 0;
+            const isProvince = document.getElementById("cIsProvince").checked;
+            const f = isProvince ? 5000 : 0;
+            document.getElementById("calcView").innerText = `المجموع عند الزبون: ${(p + f).toLocaleString()} د.ع ${f > 0 ? '(شحن 5,000 د.ع)' : '(بدون شحن)'}`;
+        }
+
+        function getDateOnlyStr(timestamp) {
+            const d = new Date(timestamp || Date.now());
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        function formatTimeDisplay(timestamp) {
+            const d = new Date(timestamp || Date.now());
+            let hours = d.getHours();
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'م' : 'ص';
+            hours = hours % 12 || 12;
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${hours}:${minutes} ${ampm} (${month}/${day})`;
+        }
+
+        function setTimeFilter(mode, btn) {
+            timeFilter = mode;
+            customDateVal = "";
+            document.getElementById("customDatePicker").value = "";
+            document.querySelectorAll(".btn-time").forEach(b => b.classList.remove("active"));
+            if (btn) btn.classList.add("active");
+
+            const labels = { 'today': '📊 مبيعات اليوم (قطع فقط)', 'yesterday': '📊 مبيعات البارحة (قطع فقط)', 'all': '📊 المبيعات الكلية (قطع فقط)' };
+            document.getElementById("salesBoxLabel").innerText = labels[mode] || '📊 إجمالي المبيعات';
+            renderUI();
+        }
+
+        function onCustomDatePick(val) {
+            if (!val) return;
+            timeFilter = "custom";
+            customDateVal = val;
+            document.querySelectorAll(".btn-time").forEach(b => b.classList.remove("active"));
+            document.getElementById("salesBoxLabel").innerText = `📊 مبيعات يوم (${val})`;
+            renderUI();
+        }
+
+        function switchMainTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll(".main-tab-btn").forEach(b => b.classList.remove("active"));
+            if (tab === 'driver') document.getElementById("tabDriver").classList.add("active");
+            if (tab === 'waitSettle') document.getElementById("tabWaitSettle").classList.add("active");
+            if (tab === 'settled') document.getElementById("tabSettled").classList.add("active");
+            if (tab === 'archive') document.getElementById("tabArchive").classList.add("active");
+            renderUI();
+        }
+
+        function handleImageUpload(e, mode) {
+            const files = Array.from(e.target.files);
+            if(files.length === 0) return;
+
+            const previewAreaId = mode === 'new' ? 'previewArea' : 'editPreviewArea';
+            const loadingMsg = document.createElement('div');
+            loadingMsg.innerText = "⏳ جاري ضغط ومعالجة الصور...";
+            loadingMsg.style.color = "#38bdf8";
+            loadingMsg.style.fontSize = "12px";
+            loadingMsg.style.marginTop = "5px";
+            loadingMsg.id = "loading-" + mode;
+            document.getElementById(previewAreaId).appendChild(loadingMsg);
+
+            let processedCount = 0;
+
+            files.forEach(file => {
+                const r = new FileReader();
+                r.onload = function(evt) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement("canvas");
+                        let w = img.width, h = img.height;
+                        const max = 450; 
+                        if (w > h && w > max) { h *= max / w; w = max; }
+                        else if (h > max) { w *= max / h; h = max; }
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+                        
+                        let b64 = canvas.toDataURL("image/jpeg", 0.4);
+
+                        if (mode === 'new') {
+                            activeImages.push(b64);
+                            renderThumbs('previewArea', activeImages, 'new');
+                        } else {
+                            editImages.push(b64);
+                            renderThumbs('editPreviewArea', editImages, 'edit');
+                        }
+                        
+                        processedCount++;
+                        if(processedCount === files.length) {
+                            const loadEl = document.getElementById("loading-" + mode);
+                            if(loadEl) loadEl.remove();
+                        }
+                    };
+                    img.src = evt.target.result;
+                };
+                r.readAsDataURL(file);
+            });
+        }
+
+        function renderThumbs(elemId, arr, mode) {
+            const el = document.getElementById(elemId);
+            el.innerHTML = "";
+            arr.forEach((src, idx) => {
+                el.innerHTML += `
+                    <div class="thumb-wrap">
+                        <img src="${src}">
+                        <button type="button" class="thumb-del" onclick="delImg('${mode}', ${idx})">✕</button>
+                    </div>
+                `;
+            });
+        }
+
+        function delImg(mode, idx) {
+            if (mode === 'new') {
+                activeImages.splice(idx, 1);
+                renderThumbs('previewArea', activeImages, 'new');
+            } else {
+                editImages.splice(idx, 1);
+                renderThumbs('editPreviewArea', editImages, 'edit');
+            }
+        }
+
+        function createOrder() {
+            const name = document.getElementById("cName").value.trim();
+            const price = parseFloat(document.getElementById("cPrice").value) || 0;
+            
+            if(!name) { alert("أدخل اسم الزبون!"); return; }
+            if(price === 0) { if(!confirm("لم تدخل سعر القطع. هل تريد الاستمرار بصفر؟")) return; }
+
+            const newOrder = {
+                id: Date.now().toString(),
+                name: name,
+                phone: document.getElementById("cPhone").value.trim(),
+                address: document.getElementById("cAddr").value.trim(),
+                basePrice: price,
+                isProvince: document.getElementById("cIsProvince").checked,
+                notes: document.getElementById("cNotes").value.trim(),
+                images: [...activeImages],
+                status: "with_driver",
+                timestamp: Date.now()
+            };
+
+            orders.unshift(newOrder);
+            saveLocal();
+            closeAddModal();
+            renderUI();
+            
+            fetch(FIREBASE_URL, {
+                method: "POST",
+                body: JSON.stringify(newOrder),
+                headers: { "Content-Type": "application/json" }
+            }).catch(e => console.error("Firebase sync error: ", e));
+        }
+
+        function openAddModal() {
+            document.getElementById("cName").value = "";
+            document.getElementById("cPhone").value = "";
+            document.getElementById("cAddr").value = "";
+            document.getElementById("cPrice").value = "";
+            document.getElementById("cIsProvince").checked = false;
+            document.getElementById("cNotes").value = "";
+            document.getElementById("fileInput").value = "";
+            activeImages = [];
+            renderThumbs('previewArea', activeImages, 'new');
+            recalcNew();
+            document.getElementById("addModal").style.display = "flex";
+        }
+        function closeAddModal() { document.getElementById("addModal").style.display = "none"; }
+
+        function showImg(src) {
+            document.getElementById("modalViewer").src = src;
+            document.getElementById("modal").style.display = "flex";
+        }
+
+        function updateStatus(id, stat) {
+            const ord = orders.find(o => o.id === id);
+            if(ord) {
+                if(stat === 'delivered_wait_settle' && ord.status === 'with_driver') {
+                    openDriverDeliverModal(id);
+                    return;
+                }
+                ord.status = stat;
+                saveLocal();
+                renderUI();
+            }
+        }
+
+        function openDriverDeliverModal(id) {
+            const ord = orders.find(o => o.id === id);
+            if(ord) {
+                document.getElementById("deliverOrderId").value = id;
+                document.getElementById("deliverDriverNote").value = ord.driverNote || "";
+                
+                const shipping = ord.isProvince ? 5000 : 0;
+                const total = ord.basePrice + shipping;
+                document.getElementById("deliverOrderInfo").innerText = 
+                    `المبلغ المطلوب من الزبون: ${total.toLocaleString()} د.ع\n(${ord.name})`;
+
+                document.getElementById("driverDeliverModal").style.display = "flex";
+            }
+        }
+
+        function closeDriverDeliverModal() {
+            document.getElementById("driverDeliverModal").style.display = "none";
+        }
+
+        function submitDriverDelivery() {
+            const id = document.getElementById("deliverOrderId").value;
+            const note = document.getElementById("deliverDriverNote").value.trim();
+            const ord = orders.find(o => o.id === id);
+            
+            if(ord) {
+                ord.status = 'delivered_wait_settle';
+                ord.driverNote = note;
+                saveLocal();
+                closeDriverDeliverModal();
+                
+                document.getElementById("tabWaitSettle").click(); 
+                renderUI();
+            }
+        }
+
+
+        function openEdit(id) {
+            const o = orders.find(x => x.id === id);
+            if(!o) return;
+            document.getElementById("editId").value = o.id;
+            document.getElementById("editName").value = o.name;
+            document.getElementById("editPhone").value = o.phone || "";
+            document.getElementById("editAddr").value = o.address || "";
+            document.getElementById("editPrice").value = o.basePrice || 0;
+            document.getElementById("editIsProvince").checked = o.isProvince || false;
+            document.getElementById("editNotes").value = o.notes || "";
+            editImages = o.images ? [...o.images] : [];
+            renderThumbs('editPreviewArea', editImages, 'edit');
+            document.getElementById("editModal").style.display = "flex";
+        }
+        function closeEditModal() { document.getElementById("editModal").style.display = "none"; }
+        
+        function saveEditedOrder() {
+            const id = document.getElementById("editId").value;
+            const o = orders.find(x => x.id === id);
+            if(!o) return;
+            
+            o.name = document.getElementById("editName").value;
+            o.phone = document.getElementById("editPhone").value;
+            o.address = document.getElementById("editAddr").value;
+            o.basePrice = parseFloat(document.getElementById("editPrice").value) || 0;
+            o.isProvince = document.getElementById("editIsProvince").checked;
+            o.notes = document.getElementById("editNotes").value;
+            o.images = [...editImages];
+            
+            saveLocal();
+            closeEditModal();
+            renderUI();
+        }
+
+        function generateWhatsappText(ord) {
+            const shipping = ord.isProvince ? 5000 : 0;
+            const total = ord.basePrice + shipping;
+            let txt = `📦 *وصل طلب جديد*\n`;
+            txt += `👤 الاسم: ${ord.name}\n`;
+            if(ord.phone) txt += `📞 الهاتف: ${ord.phone}\n`;
+            if(ord.address) txt += `📍 العنوان: ${ord.address}\n`;
+            txt += `💰 سعر القطع: ${ord.basePrice.toLocaleString()} د.ع\n`;
+            txt += `🚚 أجور التوصيل: ${shipping > 0 ? shipping.toLocaleString() + ' د.ع' : 'لا يوجد'}\n`;
+            txt += `💵 *المبلغ الكلي المطلوب*: ${total.toLocaleString()} د.ع\n`;
+            if(ord.notes) txt += `📝 ملاحظات: ${ord.notes}\n`;
+            return encodeURIComponent(txt);
+        }
+
+        function renderUI() {
+            const list = document.getElementById("ordersList");
+            const term = document.getElementById("searchInput").value.toLowerCase();
+            list.innerHTML = "";
+
+            let driverCount = 0, waitSettleCount = 0, settledCount = 0;
+            let todayBaseSales = 0, todayOrdersCount = 0;
+            let todayCashCollected = 0, todayDeliveredCount = 0;
+
+            const now = new Date();
+            const todayStr = getDateOnlyStr(now);
+            const yesterdayStr = getDateOnlyStr(new Date(now.getTime() - 86400000));
+
+            orders.forEach(o => {
+                if(o.status === 'with_driver') driverCount++;
+                if(o.status === 'delivered_wait_settle') waitSettleCount++;
+                if(o.status === 'settled') settledCount++;
+
+                const oDateStr = getDateOnlyStr(o.timestamp);
+                let timeMatches = false;
+                
+                if(timeFilter === 'all') timeMatches = true;
+                else if(timeFilter === 'today' && oDateStr === todayStr) timeMatches = true;
+                else if(timeFilter === 'yesterday' && oDateStr === yesterdayStr) timeMatches = true;
+                else if(timeFilter === 'custom' && oDateStr === customDateVal) timeMatches = true;
+
+                if(timeMatches) {
+                    if (o.status !== 'returned' && o.status !== 'postponed') {
+                         todayBaseSales += o.basePrice;
+                         todayOrdersCount++;
+                    }
+                    if (o.status === 'settled' || o.status === 'delivered_wait_settle') {
+                         const shipping = o.isProvince ? 5000 : 0;
+                         todayCashCollected += (o.basePrice + shipping);
+                         todayDeliveredCount++;
+                    }
+                }
+            });
+
+            document.getElementById("driverCount").innerText = driverCount;
+            document.getElementById("waitSettleCount").innerText = waitSettleCount;
+            document.getElementById("settledCount").innerText = settledCount;
+
+            document.getElementById("totalSalesVal").innerText = todayBaseSales.toLocaleString() + " د.ع";
+            document.getElementById("totalOrdersCount").innerText = todayOrdersCount + " طلب";
+            
+            document.getElementById("todayCash").innerText = todayCashCollected.toLocaleString() + " د.ع";
+            document.getElementById("todayDeliveredCount").innerText = todayDeliveredCount + " طلبات واصلة";
+
+
+            const filtered = orders.filter(o => {
+                const searchMatch = !term || o.name.toLowerCase().includes(term) || (o.phone && o.phone.includes(term)) || (o.address && o.address.toLowerCase().includes(term));
+                
+                let tabMatch = false;
+                if(currentTab === 'driver' && o.status === 'with_driver') tabMatch = true;
+                if(currentTab === 'waitSettle' && o.status === 'delivered_wait_settle') tabMatch = true;
+                if(currentTab === 'settled' && o.status === 'settled') tabMatch = true;
+                if(currentTab === 'archive' && (o.status === 'returned' || o.status === 'postponed')) tabMatch = true;
+
+                return searchMatch && tabMatch;
+            });
+
+            filtered.forEach(o => {
+                const shipping = o.isProvince ? 5000 : 0;
+                const total = o.basePrice + shipping;
+                
+                let bClass = 'card';
+                let sLabel = '🚚 بيد المندوب (جاري التوصيل)';
+                if(o.status === 'delivered_wait_settle') { bClass += ' delivered-wait'; sLabel = '⏳ واصل (بانتظار تسوية الكاش)'; }
+                if(o.status === 'settled') { bClass += ' settled'; sLabel = '✅ تمت المحاسبة'; }
+                if(o.status === 'returned') { bClass += ' returned'; sLabel = '❌ راجع'; }
+                if(o.status === 'postponed') { bClass += ' postponed'; sLabel = '📅 مؤجل'; }
+
+                let imgs = '';
+                if(o.images && o.images.length > 0) {
+                    imgs = '<div class="img-gallery">';
+                    o.images.forEach(img => imgs += `<img src="${img}" onclick="showImg('${img}')">`);
+                    imgs += '</div>';
+                }
+
+                let driverNoteHtml = '';
+                if(o.driverNote) {
+                    driverNoteHtml = `<div class="driver-note-box">📝 ملاحظة المندوب: ${o.driverNote}</div>`;
+                }
+
+                let actions = '<div class="action-row">';
+                actions += `<button class="btn-edit" onclick="openEdit('${o.id}')">✏️ تعديل</button>`;
+                
+                if(o.phone) actions += `<a href="tel:${o.phone}" class="btn-call">📞 اتصال</a>`;
+                actions += `<a href="https://wa.me/?text=${generateWhatsappText(o)}" target="_blank" class="btn-share">📤 شارك الوصل</a>`;
+
+                if(o.status === 'with_driver') {
+                    actions += `<button class="btn-driver-deliver" onclick="updateStatus('${o.id}', 'delivered_wait_settle')">📦 تم التسليم للزبون</button>`;
+                    actions += `<button class="btn-ret" onclick="updateStatus('${o.id}', 'returned')">❌ راجع</button>`;
+                    actions += `<button class="btn-post" onclick="updateStatus('${o.id}', 'postponed')">📅 تأجيل</button>`;
+                }
+                else if (o.status === 'delivered_wait_settle') {
+                    actions += `<button class="btn-settle-cash" onclick="updateStatus('${o.id}', 'settled')">💵 قبضت الكاش من المندوب</button>`;
+                    actions += `<button class="btn-ret" onclick="updateStatus('${o.id}', 'returned')">❌ سحب راجع</button>`;
+                }
+                else if (o.status === 'returned' || o.status === 'postponed') {
+                    actions += `<button class="btn-edit" onclick="updateStatus('${o.id}', 'with_driver')">🔄 إعادة بيد المندوب</button>`;
+                }
+
+                actions += '</div>';
+
+                list.innerHTML += `
+                    <div class="${bClass}">
+                        <div class="card-header">
+                            <span class="cust-name">${o.name}</span>
+                            <span class="order-time">${formatTimeDisplay(o.timestamp)}</span>
+                        </div>
+                        <div class="badge-status" style="background:#0f172a; border:1px solid #475569; color:#cbd5e1;">${sLabel}</div>
+                        
+                        <div class="card-details">
+                            ${o.phone ? `<div>📞 ${o.phone}</div>` : ''}
+                            ${o.address ? `<div>📍 ${o.address}</div>` : ''}
+                            ${o.notes ? `<div>📝 ملاحظات: ${o.notes}</div>` : ''}
+                            <hr style="border:0; border-top:1px dashed #334155; margin:8px 0;">
+                            <div>سعر القطع: ${o.basePrice.toLocaleString()} د.ع</div>
+                            <div>أجور التوصيل: ${shipping > 0 ? '5,000 د.ع (محافظات)' : 'لا يوجد (أو ضمن السعر)'}</div>
+                            <div class="price-highlight">المطلوب من الزبون: ${total.toLocaleString()} د.ع</div>
+                        </div>
+                        ${driverNoteHtml}
+                        ${imgs}
+                        ${actions}
+                    </div>
+                `;
+            });
+        }
+
+        async function fetchOrders() {
+            document.getElementById("netStatus").innerText = "⏳ جاري التحديث...";
+            try {
+                const res = await fetch(FIREBASE_URL);
+                const data = await res.json();
+                if(data) {
+                    const keys = Object.keys(data);
+                    const fetchedOrders = keys.map(k => data[k]);
+                    
+                    fetchedOrders.forEach(fo => {
+                        if(!orders.find(lo => lo.id === fo.id)) {
+                            orders.push(fo);
+                        }
+                    });
+                    saveLocal();
+                    renderUI();
+                }
+                document.getElementById("netStatus").innerText = "🟢 متزامن وسريع";
+            } catch(e) {
+                document.getElementById("netStatus").innerText = "🔴 خطأ بالاتصال (تعمل اوفلاين)";
+            }
+        }
+
+        renderUI();
+    </script>
 </body>
 </html>
