@@ -138,6 +138,7 @@
         </div>
     </div>
 
+    <!-- نافذة إضافة طلب مع مربع اختيار المحافظات فقط -->
     <div id="addModal" class="modal">
         <div class="modal-content">
             <div class="modal-title">📦 تثبيت طلب جديد</div>
@@ -163,6 +164,7 @@
         </div>
     </div>
 
+    <!-- نافذة التعديل مع مربع اختيار المحافظات -->
     <div id="editModal" class="modal">
         <div class="modal-content">
             <div class="modal-title">✏️ تعديل الطلب</div>
@@ -204,7 +206,12 @@
         let editImages = [];
 
         function loadExistingLocalData() {
-            const keysToTry = [STORAGE_KEY, "orders_v5_master", "orders_secure_db_v4", "simple_orders_storage_v1"];
+            const keysToTry = [
+                STORAGE_KEY,
+                "orders_v5_master",
+                "orders_secure_db_v4",
+                "simple_orders_storage_v1"
+            ];
             for (let k of keysToTry) {
                 try {
                     const raw = localStorage.getItem(k);
@@ -223,21 +230,8 @@
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
             } catch(e) {
-                // نظام حماية الذاكرة: ضغط ومسح الصور القديمة اذا امتلأت الذاكرة
-                let freedOrders = orders.map(o => {
-                    if(o.status === 'settled' || o.status === 'returned' || o.status === 'postponed') {
-                        return { ...o, images: [] };
-                    }
-                    return o;
-                });
-                try {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(freedOrders));
-                    orders = freedOrders; 
-                } catch(e2) {
-                    const light = orders.map(o => ({ ...o, images: [] }));
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(light));
-                    orders = light;
-                }
+                const light = orders.map(o => ({ ...o, images: [] }));
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(light));
             }
         }
 
@@ -271,7 +265,11 @@
             document.querySelectorAll(".btn-time").forEach(b => b.classList.remove("active"));
             if (btn) btn.classList.add("active");
 
-            const labels = { 'today': '📊 مبيعات اليوم (قطع فقط)', 'yesterday': '📊 مبيعات البارحة (قطع فقط)', 'all': '📊 المبيعات الكلية (قطع فقط)' };
+            const labels = {
+                'today': '📊 مبيعات اليوم (قطع فقط)',
+                'yesterday': '📊 مبيعات البارحة (قطع فقط)',
+                'all': '📊 المبيعات الكلية (قطع فقط)'
+            };
             document.getElementById("salesBoxLabel").innerText = labels[mode] || '📊 إجمالي المبيعات';
             renderUI();
         }
@@ -297,19 +295,6 @@
 
         function handleImageUpload(e, mode) {
             const files = Array.from(e.target.files);
-            if(files.length === 0) return;
-
-            const previewAreaId = mode === 'new' ? 'previewArea' : 'editPreviewArea';
-            const loadingMsg = document.createElement('div');
-            loadingMsg.innerText = "⏳ جاري ضغط ومعالجة الصور...";
-            loadingMsg.style.color = "#38bdf8";
-            loadingMsg.style.fontSize = "12px";
-            loadingMsg.style.marginTop = "5px";
-            loadingMsg.id = "loading-" + mode;
-            document.getElementById(previewAreaId).appendChild(loadingMsg);
-
-            let processedCount = 0;
-
             files.forEach(file => {
                 const r = new FileReader();
                 r.onload = function(evt) {
@@ -317,26 +302,18 @@
                     img.onload = function() {
                         const canvas = document.createElement("canvas");
                         let w = img.width, h = img.height;
-                        const max = 450; 
+                        const max = 220;
                         if (w > h && w > max) { h *= max / w; w = max; }
                         else if (h > max) { w *= max / h; h = max; }
                         canvas.width = w; canvas.height = h;
                         canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-                        
-                        let b64 = canvas.toDataURL("image/jpeg", 0.4);
-
+                        const b64 = canvas.toDataURL("image/jpeg", 0.4);
                         if (mode === 'new') {
                             activeImages.push(b64);
                             renderThumbs('previewArea', activeImages, 'new');
                         } else {
                             editImages.push(b64);
                             renderThumbs('editPreviewArea', editImages, 'edit');
-                        }
-                        
-                        processedCount++;
-                        if(processedCount === files.length) {
-                            const loadEl = document.getElementById("loading-" + mode);
-                            if(loadEl) loadEl.remove();
                         }
                     };
                     img.src = evt.target.result;
@@ -464,6 +441,7 @@
                 closeDriverDeliverModal();
                 
                 document.getElementById("tabWaitSettle").click(); 
+                // Auto switch to waiting tab so they see it moved
                 renderUI();
             }
         }
@@ -517,12 +495,14 @@
             return encodeURIComponent(txt);
         }
 
+
         function renderUI() {
             const list = document.getElementById("ordersList");
             const term = document.getElementById("searchInput").value.toLowerCase();
             list.innerHTML = "";
 
             let driverCount = 0, waitSettleCount = 0, settledCount = 0;
+            
             let todayBaseSales = 0, todayOrdersCount = 0;
             let todayCashCollected = 0, todayDeliveredCount = 0;
 
@@ -657,6 +637,7 @@
                     const keys = Object.keys(data);
                     const fetchedOrders = keys.map(k => data[k]);
                     
+                    // Basic merge (prefer local if exists, else add fetched)
                     fetchedOrders.forEach(fo => {
                         if(!orders.find(lo => lo.id === fo.id)) {
                             orders.push(fo);
@@ -667,7 +648,8 @@
                 }
                 document.getElementById("netStatus").innerText = "🟢 متزامن وسريع";
             } catch(e) {
-                document.getElementById("netStatus").innerText = "🔴 خطأ بالاتصال (تعمل اوفلاين)";
+                document.getElementById("netStatus").innerText = "🔴 خطأ بالاتصال";
+                alert("لم ينجح التحديث من السيرفر. يرجى التأكد من الإنترنت أو تشغيل الكود من التطبيق القديم.");
             }
         }
 
